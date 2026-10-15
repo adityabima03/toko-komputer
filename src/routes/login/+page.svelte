@@ -1,9 +1,7 @@
 <script lang="ts">
-	import { createMutation } from '@tanstack/svelte-query';
-	import { z } from 'zod';
-	import { goto } from '$app/navigation';
+	import { superForm } from 'sveltekit-superforms';
+	import { zod4Client } from 'sveltekit-superforms/adapters';
 	import { resolve } from '$app/paths';
-	import { page } from '$app/state';
 	import { toast } from 'svelte-sonner';
 	import RiComputerLine from 'remixicon-svelte/icons/computer-line';
 	import RiMailLine from 'remixicon-svelte/icons/mail-line';
@@ -16,62 +14,37 @@
 	import RiTruckLine from 'remixicon-svelte/icons/truck-line';
 	import * as Card from '#lib/components/ui/card/index.js';
 	import * as Alert from '#lib/components/ui/alert/index.js';
+	import * as Form from '#lib/components/ui/form/index.js';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { Input } from '#lib/components/ui/input/index.js';
-	import { Label } from '#lib/components/ui/label/index.js';
 	import { Checkbox } from '#lib/components/ui/checkbox/index.js';
 	import ThemeToggle from '#lib/components/theme-toggle.svelte';
-	import { loginMutation } from '#lib/api/auth.js';
-	import { getErrorMessage, getFieldErrors } from '#lib/api/client.js';
 	import { loginSchema } from '#lib/schemas/auth.js';
-	import { safeRedirect } from '#lib/redirect.js';
+	import type { PageProps } from './$types';
 
-	type FieldErrors = Partial<Record<'email' | 'password', string[]>>;
+	let { data }: PageProps = $props();
 
-	let email = $state('');
-	let password = $state('');
-	let remember = $state(false);
 	let showPassword = $state(false);
-	let fieldErrors = $state<FieldErrors>({});
 
-	const redirectTo = $derived(safeRedirect(page.url.searchParams.get('redirectTo')));
-
-	const login = createMutation(() => ({
-		...loginMutation(),
-		onSuccess: async (user) => {
-			toast.success(`Selamat datang, ${user.name}!`);
-			// `redirectTo` is an arbitrary same-origin path already validated by `safeRedirect`.
-			// eslint-disable-next-line svelte/no-navigation-without-resolve
-			await goto(redirectTo, { invalidateAll: true });
+	// svelte-ignore state_referenced_locally
+	const form = superForm(data.form, {
+		validators: zod4Client(loginSchema),
+		onResult: ({ result }) => {
+			if (result.type === 'redirect') toast.success('Berhasil masuk. Selamat berbelanja!');
 		},
-		onError: (error) => {
-			fieldErrors = getFieldErrors(error) as FieldErrors;
+		onError: () => {
+			message.set('Tidak dapat terhubung ke server, coba lagi');
 		}
-	}));
+	});
 
-	function handleSubmit(event: SubmitEvent) {
-		event.preventDefault();
-		login.reset();
-
-		const result = loginSchema.safeParse({ email, password, remember });
-		if (!result.success) {
-			fieldErrors = z.flattenError(result.error).fieldErrors;
-			return;
-		}
-
-		fieldErrors = {};
-		login.mutate(result.data);
-	}
+	const { form: formData, enhance, message, errors, submitting } = form;
 
 	function fillDemo() {
-		email = 'admin@tokokomputer.id';
-		password = 'admin123';
-		fieldErrors = {};
+		$formData.email = 'admin@tokokomputer.id';
+		$formData.password = 'admin123';
+		errors.set({});
+		message.set(undefined);
 	}
-
-	const serverError = $derived(
-		login.isError && Object.keys(fieldErrors).length === 0 ? getErrorMessage(login.error) : null
-	);
 </script>
 
 <svelte:head>
@@ -139,89 +112,93 @@
 				</Card.Header>
 
 				<Card.Content>
-					<form class="grid gap-4" onsubmit={handleSubmit} novalidate>
-						{#if serverError}
+					<form method="POST" class="grid gap-4" use:enhance novalidate>
+						{#if $message}
 							<Alert.Root variant="destructive">
 								<RiErrorWarningLine />
 								<Alert.Title>Login gagal</Alert.Title>
-								<Alert.Description>{serverError}</Alert.Description>
+								<Alert.Description>{$message}</Alert.Description>
 							</Alert.Root>
 						{/if}
 
-						<div class="grid gap-1.5">
-							<Label for="email">Email</Label>
-							<div class="relative">
-								<RiMailLine
-									class="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
-								/>
-								<Input
-									id="email"
-									type="email"
-									autocomplete="email"
-									placeholder="nama@email.com"
-									class="pl-8"
-									bind:value={email}
-									aria-invalid={fieldErrors.email ? true : undefined}
-									aria-describedby={fieldErrors.email ? 'email-error' : undefined}
-								/>
-							</div>
-							{#if fieldErrors.email}
-								<p id="email-error" class="text-xs text-destructive">{fieldErrors.email[0]}</p>
-							{/if}
-						</div>
+						<Form.Field {form} name="email">
+							<Form.Control>
+								{#snippet children({ props })}
+									<Form.Label>Email</Form.Label>
+									<div class="relative">
+										<RiMailLine
+											class="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+										/>
+										<Input
+											{...props}
+											type="email"
+											autocomplete="email"
+											placeholder="nama@email.com"
+											class="pl-8"
+											bind:value={$formData.email}
+										/>
+									</div>
+								{/snippet}
+							</Form.Control>
+							<Form.FieldErrors />
+						</Form.Field>
 
-						<div class="grid gap-1.5">
-							<div class="flex items-center justify-between">
-								<Label for="password">Password</Label>
-								<button
-									type="button"
-									class="text-xs text-muted-foreground underline-offset-4 hover:underline"
-									onclick={() => toast.info('Fitur reset password belum tersedia')}
-								>
-									Lupa password?
-								</button>
-							</div>
-							<div class="relative">
-								<RiLockLine
-									class="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
-								/>
-								<Input
-									id="password"
-									type={showPassword ? 'text' : 'password'}
-									autocomplete="current-password"
-									placeholder="••••••••"
-									class="px-8"
-									bind:value={password}
-									aria-invalid={fieldErrors.password ? true : undefined}
-									aria-describedby={fieldErrors.password ? 'password-error' : undefined}
-								/>
-								<button
-									type="button"
-									class="absolute top-1/2 right-2.5 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-									onclick={() => (showPassword = !showPassword)}
-									aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
-								>
-									{#if showPassword}
-										<RiEyeOffLine class="size-4" />
-									{:else}
-										<RiEyeLine class="size-4" />
-									{/if}
-								</button>
-							</div>
-							{#if fieldErrors.password}
-								<p id="password-error" class="text-xs text-destructive">
-									{fieldErrors.password[0]}
-								</p>
-							{/if}
-						</div>
+						<Form.Field {form} name="password">
+							<Form.Control>
+								{#snippet children({ props })}
+									<div class="flex items-center justify-between">
+										<Form.Label>Password</Form.Label>
+										<button
+											type="button"
+											class="text-xs text-muted-foreground underline-offset-4 hover:underline"
+											onclick={() => toast.info('Fitur reset password belum tersedia')}
+										>
+											Lupa password?
+										</button>
+									</div>
+									<div class="relative">
+										<RiLockLine
+											class="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+										/>
+										<Input
+											{...props}
+											type={showPassword ? 'text' : 'password'}
+											autocomplete="current-password"
+											placeholder="••••••••"
+											class="px-8"
+											bind:value={$formData.password}
+										/>
+										<button
+											type="button"
+											class="absolute top-1/2 right-2.5 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+											onclick={() => (showPassword = !showPassword)}
+											aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+										>
+											{#if showPassword}
+												<RiEyeOffLine class="size-4" />
+											{:else}
+												<RiEyeLine class="size-4" />
+											{/if}
+										</button>
+									</div>
+								{/snippet}
+							</Form.Control>
+							<Form.FieldErrors />
+						</Form.Field>
 
-						<div class="flex items-center gap-2">
-							<Checkbox id="remember" bind:checked={remember} />
-							<Label for="remember" class="font-normal">Ingat saya selama 30 hari</Label>
-						</div>
+						<Form.Field {form} name="remember">
+							<Form.Control>
+								{#snippet children({ props })}
+									<div class="flex items-center gap-2">
+										<Checkbox {...props} bind:checked={$formData.remember} />
+										<Form.Label class="font-normal">Ingat saya selama 30 hari</Form.Label>
+									</div>
+								{/snippet}
+							</Form.Control>
+						</Form.Field>
 
-						<Button type="submit" size="lg" class="w-full" disabled={login.isPending}>
-							{#if login.isPending}
+						<Button type="submit" size="lg" class="w-full" disabled={$submitting}>
+							{#if $submitting}
 								<RiLoader4Line class="animate-spin" /> Memproses...
 							{:else}
 								Masuk
