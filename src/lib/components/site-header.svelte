@@ -10,7 +10,11 @@
 	import { cart } from '#lib/stores/cart.svelte.js';
 	import type { User } from '#lib/types.js';
 
-	let { user, search = $bindable('') }: { user: User | null; search?: string } = $props();
+	let {
+		user,
+		search = $bindable(''),
+		showSearch = true
+	}: { user: User | null; search?: string; showSearch?: boolean } = $props();
 </script>
 
 <header class="sticky top-0 z-40 border-b bg-background/80 backdrop-blur">
@@ -24,22 +28,30 @@
 			<span class="hidden sm:inline">TokoKomputer</span>
 		</a>
 
-		<div class="relative mx-auto w-full max-w-xl">
-			<RiSearchLine
-				class="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
-			/>
-			<Input
-				type="search"
-				placeholder="Cari laptop, VGA, monitor..."
-				class="pl-8"
-				bind:value={search}
-				aria-label="Cari produk"
-			/>
-		</div>
+		{#if showSearch}
+			<div class="relative mx-auto w-full max-w-xl">
+				<RiSearchLine
+					class="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+				/>
+				<Input
+					type="search"
+					placeholder="Cari laptop, VGA, monitor..."
+					class="pl-8"
+					bind:value={search}
+					aria-label="Cari produk"
+				/>
+			</div>
+		{/if}
 
-		<div class="flex shrink-0 items-center gap-1">
+		<div class={['flex shrink-0 items-center gap-1', !showSearch && 'ml-auto']}>
 			<ThemeToggle />
-			<Button variant="ghost" size="icon" class="relative" aria-label="Keranjang">
+			<Button
+				variant="ghost"
+				size="icon"
+				class="relative"
+				href={resolve('/keranjang')}
+				aria-label="Keranjang ({cart.count} item)"
+			>
 				<RiShoppingCart2Line />
 				{#if cart.count > 0}
 					<span

@@ -1,36 +1,17 @@
-<script lang="ts" module>
-	import RiMacbookLine from 'remixicon-svelte/icons/macbook-line';
-	import RiComputerLine from 'remixicon-svelte/icons/computer-line';
-	import RiCpuLine from 'remixicon-svelte/icons/cpu-line';
-	import RiTv2Line from 'remixicon-svelte/icons/tv-2-line';
-	import RiKeyboardLine from 'remixicon-svelte/icons/keyboard-line';
-	import RiRouterLine from 'remixicon-svelte/icons/router-line';
-
-	const categoryIcons = {
-		laptop: RiMacbookLine,
-		'pc-rakitan': RiComputerLine,
-		komponen: RiCpuLine,
-		monitor: RiTv2Line,
-		aksesoris: RiKeyboardLine,
-		jaringan: RiRouterLine
-	} as const;
-</script>
-
 <script lang="ts">
 	import RiStarFill from 'remixicon-svelte/icons/star-fill';
 	import RiShoppingCart2Line from 'remixicon-svelte/icons/shopping-cart-2-line';
 	import * as Card from '#lib/components/ui/card/index.js';
 	import { Badge } from '#lib/components/ui/badge/index.js';
 	import { Button } from '#lib/components/ui/button/index.js';
+	import { categoryIcon } from '#lib/category-icons.js';
 	import { discountPercent, formatCompact, formatRupiah } from '#lib/format.js';
 	import type { Product } from '#lib/types.js';
 
 	let { product, onAddToCart }: { product: Product; onAddToCart?: (product: Product) => void } =
 		$props();
 
-	const Icon = $derived(
-		categoryIcons[product.category as keyof typeof categoryIcons] ?? RiComputerLine
-	);
+	const Icon = $derived(categoryIcon(product.category));
 	const discount = $derived(discountPercent(product.price, product.originalPrice));
 	const outOfStock = $derived(product.stock === 0);
 </script>

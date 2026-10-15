@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { createQuery, keepPreviousData } from '@tanstack/svelte-query';
+	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { toast } from 'svelte-sonner';
 	import RiArrowRightLine from 'remixicon-svelte/icons/arrow-right-line';
@@ -51,7 +52,10 @@
 			});
 			return;
 		}
-		toast.success('Ditambahkan ke keranjang', { description: product.name });
+		toast.success('Ditambahkan ke keranjang', {
+			description: product.name,
+			action: { label: 'Lihat', onClick: () => goto(resolve('/keranjang')) }
+		});
 	}
 
 	function scrollToProducts() {
