@@ -31,5 +31,4 @@ export type ProductFilter = {
 
 export type ApiErrorBody = {
 	message: string;
-	errors?: Record<string, string[] | undefined>;
 };

@@ -70,9 +70,4 @@ export function getErrorMessage(error: unknown, fallback = 'Terjadi kesalahan, c
 	return error instanceof Error ? error.message : fallback;
 }
 
-export function getFieldErrors(error: unknown) {
-	if (axios.isAxiosError<ApiErrorBody>(error)) return error.response?.data?.errors ?? {};
-	return {};
-}
-
 export type { AxiosInstance };
