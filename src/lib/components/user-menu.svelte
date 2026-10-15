@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { createMutation } from '@tanstack/svelte-query';
-	import { invalidateAll } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import { toast } from 'svelte-sonner';
 	import RiUserLine from 'remixicon-svelte/icons/user-line';
 	import RiShoppingCart2Line from 'remixicon-svelte/icons/shopping-cart-2-line';
@@ -47,7 +48,7 @@
 			<span class="text-xs font-normal text-muted-foreground">{user.email}</span>
 		</DropdownMenu.Label>
 		<DropdownMenu.Separator />
-		<DropdownMenu.Item disabled>
+		<DropdownMenu.Item onSelect={() => goto(resolve('/profil'))}>
 			<RiUserLine /> Profil Saya
 		</DropdownMenu.Item>
 		<DropdownMenu.Item disabled>

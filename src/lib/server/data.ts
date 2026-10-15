@@ -1,4 +1,4 @@
-import { and, eq, like, or, type SQL } from 'drizzle-orm';
+import { and, eq, like, ne, or, type SQL } from 'drizzle-orm';
 import type { Category, Product, User } from '#lib/types.js';
 import { db } from './db/index.js';
 import { categories, products, users } from './db/schema.js';
@@ -13,6 +13,25 @@ export function findUserByEmail(email: string) {
 
 export function findUserById(id: string) {
 	return db.query.users.findFirst({ where: eq(users.id, id) });
+}
+
+export async function isEmailTaken(email: string, exceptUserId: string) {
+	const row = await db.query.users.findFirst({
+		columns: { id: true },
+		where: and(eq(users.email, email.toLowerCase()), ne(users.id, exceptUserId))
+	});
+	return !!row;
+}
+
+export async function updateUserProfile(id: string, data: { name: string; email: string }) {
+	await db
+		.update(users)
+		.set({ name: data.name, email: data.email.toLowerCase() })
+		.where(eq(users.id, id));
+}
+
+export async function updateUserPassword(id: string, passwordHash: string) {
+	await db.update(users).set({ passwordHash }).where(eq(users.id, id));
 }
 
 export function toPublicUser({ id, name, email, role }: UserRecord): User {

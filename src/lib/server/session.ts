@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { eq } from 'drizzle-orm';
+import { and, eq, ne } from 'drizzle-orm';
 import type { Cookies } from '@sveltejs/kit';
 import { db } from './db/index.js';
 import { sessions } from './db/schema.js';
@@ -34,6 +34,16 @@ export async function getSessionUserId(cookies: Cookies) {
 	}
 
 	return session.userId;
+}
+
+/** Mengeluarkan user dari semua perangkat lain, session saat ini tetap aktif. */
+export async function destroyOtherSessions(cookies: Cookies, userId: string) {
+	const currentId = cookies.get(SESSION_COOKIE) ?? '';
+	const removed = await db
+		.delete(sessions)
+		.where(and(eq(sessions.userId, userId), ne(sessions.id, currentId)))
+		.returning({ id: sessions.id });
+	return removed.length;
 }
 
 export async function destroySession(cookies: Cookies) {
