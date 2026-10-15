@@ -16,6 +16,7 @@
 	import { cn } from '#lib/utils.js';
 	import { DEFAULT_PRODUCT_FILTER, categoriesQuery, productsQuery } from '#lib/api/products.js';
 	import { getErrorMessage } from '#lib/api/client.js';
+	import { cart } from '#lib/stores/cart.svelte.js';
 	import type { Product } from '#lib/types.js';
 	import type { PageProps } from './$types';
 
@@ -24,7 +25,6 @@
 	let search = $state('');
 	let debouncedSearch = $state('');
 	let category = $state(DEFAULT_PRODUCT_FILTER.category);
-	let cartCount = $state(0);
 
 	$effect(() => {
 		const value = search;
@@ -45,7 +45,12 @@
 	];
 
 	function addToCart(product: Product) {
-		cartCount += 1;
+		if (!cart.add(product)) {
+			toast.error('Stok tidak mencukupi', {
+				description: `Maksimal ${product.stock} unit untuk ${product.name}`
+			});
+			return;
+		}
 		toast.success('Ditambahkan ke keranjang', { description: product.name });
 	}
 
@@ -54,7 +59,7 @@
 	}
 </script>
 
-<SiteHeader user={data.user} bind:search {cartCount} />
+<SiteHeader user={data.user} bind:search />
 
 <main>
 	<section class="border-b bg-gradient-to-b from-primary/10 to-background">

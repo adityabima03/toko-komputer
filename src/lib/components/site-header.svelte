@@ -7,13 +7,10 @@
 	import { Input } from '#lib/components/ui/input/index.js';
 	import ThemeToggle from './theme-toggle.svelte';
 	import UserMenu from './user-menu.svelte';
+	import { cart } from '#lib/stores/cart.svelte.js';
 	import type { User } from '#lib/types.js';
 
-	let {
-		user,
-		search = $bindable(''),
-		cartCount = 0
-	}: { user: User | null; search?: string; cartCount?: number } = $props();
+	let { user, search = $bindable('') }: { user: User | null; search?: string } = $props();
 </script>
 
 <header class="sticky top-0 z-40 border-b bg-background/80 backdrop-blur">
@@ -44,11 +41,11 @@
 			<ThemeToggle />
 			<Button variant="ghost" size="icon" class="relative" aria-label="Keranjang">
 				<RiShoppingCart2Line />
-				{#if cartCount > 0}
+				{#if cart.count > 0}
 					<span
 						class="absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground"
 					>
-						{cartCount}
+						{cart.count > 99 ? '99+' : cart.count}
 					</span>
 				{/if}
 			</Button>
