@@ -17,13 +17,13 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 	}
 
 	const { email, password, remember } = parsed.data;
-	const user = findUserByEmail(email);
+	const user = await findUserByEmail(email);
 
 	if (!user || !verifyPassword(password, user.passwordHash)) {
 		return json({ message: 'Email atau password salah' }, { status: 401 });
 	}
 
-	createSession(cookies, user.id, remember);
+	await createSession(cookies, user.id, remember);
 
 	return json({ user: toPublicUser(user) });
 };
