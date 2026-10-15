@@ -1,24 +1,15 @@
 <script lang="ts">
 	import { createQuery, keepPreviousData } from '@tanstack/svelte-query';
-	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { toast } from 'svelte-sonner';
 	import RiArrowRightLine from 'remixicon-svelte/icons/arrow-right-line';
 	import RiTruckLine from 'remixicon-svelte/icons/truck-line';
 	import RiShieldCheckLine from 'remixicon-svelte/icons/shield-check-line';
 	import RiCustomerService2Line from 'remixicon-svelte/icons/customer-service-2-line';
-	import RiErrorWarningLine from 'remixicon-svelte/icons/error-warning-line';
 	import RiGamepadLine from 'remixicon-svelte/icons/gamepad-line';
 	import SiteHeader from '#lib/components/site-header.svelte';
-	import ProductCard from '#lib/components/product-card.svelte';
-	import * as Alert from '#lib/components/ui/alert/index.js';
+	import ProductGrid from '#lib/components/product-grid.svelte';
 	import { Button } from '#lib/components/ui/button/index.js';
-	import { Skeleton } from '#lib/components/ui/skeleton/index.js';
-	import { cn } from '#lib/utils.js';
 	import { DEFAULT_PRODUCT_FILTER, categoriesQuery, productsQuery } from '#lib/api/products.js';
-	import { getErrorMessage } from '#lib/api/client.js';
-	import { cart } from '#lib/stores/cart.svelte.js';
-	import type { Product } from '#lib/types.js';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -35,7 +26,7 @@
 
 	const categories = createQuery(() => categoriesQuery());
 	const products = createQuery(() => ({
-		...productsQuery({ category, q: debouncedSearch }),
+		...productsQuery({ ...DEFAULT_PRODUCT_FILTER, category, q: debouncedSearch }),
 		placeholderData: keepPreviousData
 	}));
 
@@ -44,19 +35,6 @@
 		{ icon: RiShieldCheckLine, title: 'Garansi Resmi', desc: '100% produk original bergaransi' },
 		{ icon: RiCustomerService2Line, title: 'Konsultasi Rakit PC', desc: 'Tim teknisi siap 24/7' }
 	];
-
-	function addToCart(product: Product) {
-		if (!cart.add(product)) {
-			toast.error('Stok tidak mencukupi', {
-				description: `Maksimal ${product.stock} unit untuk ${product.name}`
-			});
-			return;
-		}
-		toast.success('Ditambahkan ke keranjang', {
-			description: product.name,
-			action: { label: 'Lihat', onClick: () => goto(resolve('/keranjang')) }
-		});
-	}
 
 	function scrollToProducts() {
 		document.getElementById('produk')?.scrollIntoView({ behavior: 'smooth' });
@@ -123,6 +101,13 @@
 					{:else}
 						Produk terlaris minggu ini
 					{/if}
+					<span aria-hidden="true">·</span>
+					<a
+						href={resolve('/produk')}
+						class="font-medium text-primary underline-offset-4 hover:underline"
+					>
+						Lihat semua & filter
+					</a>
 				</p>
 			</div>
 
@@ -141,42 +126,7 @@
 			</div>
 		</div>
 
-		{#if products.isError}
-			<Alert.Root variant="destructive">
-				<RiErrorWarningLine />
-				<Alert.Title>Gagal memuat produk</Alert.Title>
-				<Alert.Description>{getErrorMessage(products.error)}</Alert.Description>
-			</Alert.Root>
-		{:else if products.isPending}
-			<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-				{#each Array.from({ length: 8 }, (_, i) => i) as i (i)}
-					<div class="space-y-3 rounded-xl border p-0">
-						<Skeleton class="aspect-[4/3] w-full rounded-b-none" />
-						<div class="space-y-2 p-4">
-							<Skeleton class="h-3 w-16" />
-							<Skeleton class="h-4 w-full" />
-							<Skeleton class="h-6 w-1/2" />
-						</div>
-					</div>
-				{/each}
-			</div>
-		{:else if products.data.length === 0}
-			<div class="rounded-xl border border-dashed py-16 text-center">
-				<p class="font-medium">Produk tidak ditemukan</p>
-				<p class="text-sm text-muted-foreground">Coba kata kunci atau kategori lain.</p>
-			</div>
-		{:else}
-			<div
-				class={cn(
-					'grid gap-4 transition-opacity sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4',
-					products.isPlaceholderData && 'opacity-60'
-				)}
-			>
-				{#each products.data as product (product.id)}
-					<ProductCard {product} onAddToCart={addToCart} />
-				{/each}
-			</div>
-		{/if}
+		<ProductGrid query={products} />
 	</section>
 </main>
 

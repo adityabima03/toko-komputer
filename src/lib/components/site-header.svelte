@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import RiComputerLine from 'remixicon-svelte/icons/computer-line';
+	import RiLayoutGridLine from 'remixicon-svelte/icons/layout-grid-line';
 	import RiSearchLine from 'remixicon-svelte/icons/search-line';
 	import RiShoppingCart2Line from 'remixicon-svelte/icons/shopping-cart-2-line';
 	import { Button } from '#lib/components/ui/button/index.js';
@@ -44,6 +45,9 @@
 		{/if}
 
 		<div class={['flex shrink-0 items-center gap-1', !showSearch && 'ml-auto']}>
+			<Button variant="ghost" size="sm" href={resolve('/produk')} class="hidden md:inline-flex">
+				<RiLayoutGridLine data-icon="inline-start" /> Katalog
+			</Button>
 			<ThemeToggle />
 			<Button
 				variant="ghost"

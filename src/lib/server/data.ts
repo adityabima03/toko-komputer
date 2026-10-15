@@ -1,5 +1,26 @@
-import { and, eq, like, ne, or, type SQL } from 'drizzle-orm';
-import type { Category, Product, User } from '#lib/types.js';
+import {
+	and,
+	asc,
+	count,
+	desc,
+	eq,
+	gt,
+	gte,
+	inArray,
+	like,
+	lte,
+	ne,
+	or,
+	type SQL
+} from 'drizzle-orm';
+import type {
+	BrandCount,
+	Category,
+	Product,
+	ProductFilter,
+	ProductSort,
+	User
+} from '#lib/types.js';
 import { db } from './db/index.js';
 import { categories, products, users } from './db/schema.js';
 
@@ -42,7 +63,14 @@ export function listCategories(): Promise<Category[]> {
 	return db.select().from(categories);
 }
 
-export async function listProducts(filter: { category?: string | null; q?: string | null } = {}) {
+const productOrder: Record<ProductSort, SQL[]> = {
+	popular: [desc(products.sold)],
+	rating: [desc(products.rating), desc(products.sold)],
+	price_asc: [asc(products.price)],
+	price_desc: [desc(products.price)]
+};
+
+export async function listProducts(filter: Partial<ProductFilter> = {}) {
 	const conditions: SQL[] = [];
 
 	if (filter.category && filter.category !== 'all') {
@@ -54,13 +82,29 @@ export async function listProducts(filter: { category?: string | null; q?: strin
 		conditions.push(or(like(products.name, pattern), like(products.brand, pattern))!);
 	}
 
+	if (filter.brands?.length) conditions.push(inArray(products.brand, filter.brands));
+	if (filter.minPrice != null) conditions.push(gte(products.price, filter.minPrice));
+	if (filter.maxPrice != null) conditions.push(lte(products.price, filter.maxPrice));
+	if (filter.inStock) conditions.push(gt(products.stock, 0));
+
 	const rows = await db
 		.select()
 		.from(products)
-		.where(and(...conditions));
+		.where(and(...conditions))
+		.orderBy(...productOrder[filter.sort ?? 'popular']);
 
 	return rows.map(({ originalPrice, ...rest }): Product => ({
 		...rest,
 		...(originalPrice != null ? { originalPrice } : {})
 	}));
+}
+
+/** Daftar brand beserta jumlah produknya, opsional dibatasi ke satu kategori. */
+export function listBrands(category?: string | null): Promise<BrandCount[]> {
+	return db
+		.select({ name: products.brand, count: count() })
+		.from(products)
+		.where(category && category !== 'all' ? eq(products.category, category) : undefined)
+		.groupBy(products.brand)
+		.orderBy(asc(products.brand));
 }

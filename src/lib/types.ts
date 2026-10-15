@@ -24,9 +24,21 @@ export type Product = {
 	specs: string[];
 };
 
+export type ProductSort = 'popular' | 'price_asc' | 'price_desc' | 'rating';
+
 export type ProductFilter = {
 	category: string;
 	q: string;
+	brands: string[];
+	minPrice?: number;
+	maxPrice?: number;
+	inStock: boolean;
+	sort: ProductSort;
+};
+
+export type BrandCount = {
+	name: string;
+	count: number;
 };
 
 export type ApiErrorBody = {
