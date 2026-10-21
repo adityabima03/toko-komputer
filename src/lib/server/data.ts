@@ -63,6 +63,15 @@ export function listCategories(): Promise<Category[]> {
 	return db.select().from(categories);
 }
 
+type ProductRow = typeof products.$inferSelect;
+
+function toProduct({ originalPrice, ...rest }: ProductRow): Product {
+	return {
+		...rest,
+		...(originalPrice != null ? { originalPrice } : {})
+	};
+}
+
 const productOrder: Record<ProductSort, SQL[]> = {
 	popular: [desc(products.sold)],
 	rating: [desc(products.rating), desc(products.sold)],
@@ -93,10 +102,12 @@ export async function listProducts(filter: Partial<ProductFilter> = {}) {
 		.where(and(...conditions))
 		.orderBy(...productOrder[filter.sort ?? 'popular']);
 
-	return rows.map(({ originalPrice, ...rest }): Product => ({
-		...rest,
-		...(originalPrice != null ? { originalPrice } : {})
-	}));
+	return rows.map(toProduct);
+}
+
+export async function findProductBySlug(slug: string): Promise<Product | null> {
+	const row = await db.query.products.findFirst({ where: eq(products.slug, slug) });
+	return row ? toProduct(row) : null;
 }
 
 /** Daftar brand beserta jumlah produknya, opsional dibatasi ke satu kategori. */

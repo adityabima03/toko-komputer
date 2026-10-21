@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import RiStarFill from 'remixicon-svelte/icons/star-fill';
 	import RiShoppingCart2Line from 'remixicon-svelte/icons/shopping-cart-2-line';
 	import * as Card from '#lib/components/ui/card/index.js';
@@ -14,10 +15,15 @@
 	const Icon = $derived(categoryIcon(product.category));
 	const discount = $derived(discountPercent(product.price, product.originalPrice));
 	const outOfStock = $derived(product.stock === 0);
+	const href = $derived(resolve('/produk/[slug]', { slug: product.slug }));
 	let imageFailed = $state(false);
 </script>
 
-<Card.Root class="group flex flex-col gap-0 overflow-hidden pt-0 transition-shadow hover:shadow-lg">
+<Card.Root
+	class="group relative flex flex-col gap-0 overflow-hidden pt-0 transition-shadow hover:shadow-lg"
+>
+	<a {href} class="absolute inset-0 z-0" aria-label={`Lihat ${product.name}`}></a>
+
 	<div
 		class="relative flex aspect-[4/3] items-center justify-center overflow-hidden bg-gradient-to-br from-muted to-muted/40"
 	>
@@ -28,7 +34,7 @@
 		{:else}
 			<img
 				src={product.image}
-				alt={product.name}
+				alt=""
 				loading="lazy"
 				decoding="async"
 				class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
@@ -79,7 +85,7 @@
 		</div>
 	</Card.Content>
 
-	<Card.Footer class="pt-4">
+	<Card.Footer class="relative z-10 pt-4">
 		<Button class="w-full" disabled={outOfStock} onclick={() => onAddToCart?.(product)}>
 			<RiShoppingCart2Line />
 			{outOfStock ? 'Stok Habis' : 'Tambah ke Keranjang'}
