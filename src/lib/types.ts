@@ -22,6 +22,7 @@ export type Product = {
 	sold: number;
 	stock: number;
 	specs: string[];
+	image: string;
 };
 
 export type ProductSort = 'popular' | 'price_asc' | 'price_desc' | 'rating';

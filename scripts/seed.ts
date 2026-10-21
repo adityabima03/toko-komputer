@@ -50,7 +50,9 @@ const productRows: (typeof products.$inferInsert)[] = [
 		rating: 4.8,
 		sold: 312,
 		stock: 14,
-		specs: ['Intel Core i7-14650HX', 'RTX 4060 8GB', '16GB DDR5', '1TB NVMe']
+		specs: ['Intel Core i7-14650HX', 'RTX 4060 8GB', '16GB DDR5', '1TB NVMe'],
+		image:
+			'https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=800&h=600&fit=crop&q=80'
 	},
 	{
 		id: 'p_2',
@@ -62,7 +64,9 @@ const productRows: (typeof products.$inferInsert)[] = [
 		rating: 4.9,
 		sold: 98,
 		stock: 6,
-		specs: ['Core Ultra 7 155U', '32GB LPDDR5x', '1TB SSD', '14" 2.8K OLED']
+		specs: ['Core Ultra 7 155U', '32GB LPDDR5x', '1TB SSD', '14" 2.8K OLED'],
+		image:
+			'https://images.unsplash.com/photo-1588872657578-7efd1f1555cd?w=800&h=600&fit=crop&q=80'
 	},
 	{
 		id: 'p_3',
@@ -75,7 +79,9 @@ const productRows: (typeof products.$inferInsert)[] = [
 		rating: 4.5,
 		sold: 1_204,
 		stock: 40,
-		specs: ['Ryzen 5 7530U', '16GB RAM', '512GB SSD', '15.6" FHD IPS']
+		specs: ['Ryzen 5 7530U', '16GB RAM', '512GB SSD', '15.6" FHD IPS'],
+		image:
+			'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=800&h=600&fit=crop&q=80'
 	},
 	{
 		id: 'p_4',
@@ -87,7 +93,9 @@ const productRows: (typeof products.$inferInsert)[] = [
 		rating: 4.9,
 		sold: 87,
 		stock: 5,
-		specs: ['Ryzen 7 7800X3D', 'RTX 4070 Super 12GB', '32GB DDR5', '1TB NVMe Gen4']
+		specs: ['Ryzen 7 7800X3D', 'RTX 4070 Super 12GB', '32GB DDR5', '1TB NVMe Gen4'],
+		image:
+			'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=800&h=600&fit=crop&q=80'
 	},
 	{
 		id: 'p_5',
@@ -99,7 +107,9 @@ const productRows: (typeof products.$inferInsert)[] = [
 		rating: 4.6,
 		sold: 256,
 		stock: 22,
-		specs: ['Core i5-14400', '16GB DDR4', '512GB NVMe', 'Windows 11 Pro']
+		specs: ['Core i5-14400', '16GB DDR4', '512GB NVMe', 'Windows 11 Pro'],
+		image:
+			'https://images.unsplash.com/photo-1593640408182-31c70c8268f5?w=800&h=600&fit=crop&q=80'
 	},
 	{
 		id: 'p_6',
@@ -112,7 +122,9 @@ const productRows: (typeof products.$inferInsert)[] = [
 		rating: 4.9,
 		sold: 640,
 		stock: 18,
-		specs: ['8 Core / 16 Thread', 'Boost 5.0GHz', '96MB L3 Cache', 'Socket AM5']
+		specs: ['8 Core / 16 Thread', 'Boost 5.0GHz', '96MB L3 Cache', 'Socket AM5'],
+		image:
+			'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&h=600&fit=crop&q=80'
 	},
 	{
 		id: 'p_7',
@@ -124,7 +136,9 @@ const productRows: (typeof products.$inferInsert)[] = [
 		rating: 4.7,
 		sold: 221,
 		stock: 9,
-		specs: ['12GB GDDR6X', 'DLSS 3', 'Dual Fan', 'PCIe 4.0']
+		specs: ['12GB GDDR6X', 'DLSS 3', 'Dual Fan', 'PCIe 4.0'],
+		image:
+			'https://images.unsplash.com/photo-1591488320449-011701bb6704?w=800&h=600&fit=crop&q=80'
 	},
 	{
 		id: 'p_8',
@@ -136,7 +150,9 @@ const productRows: (typeof products.$inferInsert)[] = [
 		rating: 4.9,
 		sold: 980,
 		stock: 35,
-		specs: ['PCIe 4.0 x4', 'Read 7450MB/s', 'Write 6900MB/s', 'Garansi 5 Tahun']
+		specs: ['PCIe 4.0 x4', 'Read 7450MB/s', 'Write 6900MB/s', 'Garansi 5 Tahun'],
+		image:
+			'https://images.unsplash.com/photo-1597872200969-2b65d56bd16b?w=800&h=600&fit=crop&q=80'
 	},
 	{
 		id: 'p_9',
@@ -149,7 +165,9 @@ const productRows: (typeof products.$inferInsert)[] = [
 		rating: 4.8,
 		sold: 410,
 		stock: 12,
-		specs: ['27" Nano IPS', '2560x1440', '180Hz 1ms', 'HDR10']
+		specs: ['27" Nano IPS', '2560x1440', '180Hz 1ms', 'HDR10'],
+		image:
+			'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=800&h=600&fit=crop&q=80'
 	},
 	{
 		id: 'p_10',
@@ -161,7 +179,9 @@ const productRows: (typeof products.$inferInsert)[] = [
 		rating: 4.7,
 		sold: 76,
 		stock: 0,
-		specs: ['27" IPS Black', 'QHD 120Hz', '100% sRGB', 'USB-C Hub']
+		specs: ['27" IPS Black', 'QHD 120Hz', '100% sRGB', 'USB-C Hub'],
+		image:
+			'https://images.unsplash.com/photo-1616763355548-1b606f439f86?w=800&h=600&fit=crop&q=80'
 	},
 	{
 		id: 'p_11',
@@ -173,7 +193,9 @@ const productRows: (typeof products.$inferInsert)[] = [
 		rating: 4.9,
 		sold: 1_870,
 		stock: 60,
-		specs: ['8000 DPI', 'Quiet Click', 'USB-C', 'Multi-device']
+		specs: ['8000 DPI', 'Quiet Click', 'USB-C', 'Multi-device'],
+		image:
+			'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=800&h=600&fit=crop&q=80'
 	},
 	{
 		id: 'p_12',
@@ -186,7 +208,9 @@ const productRows: (typeof products.$inferInsert)[] = [
 		rating: 4.7,
 		sold: 532,
 		stock: 25,
-		specs: ['TKL Hot-swap', 'Gateron Brown', 'Bluetooth 5.1', 'QMK/VIA']
+		specs: ['TKL Hot-swap', 'Gateron Brown', 'Bluetooth 5.1', 'QMK/VIA'],
+		image:
+			'https://images.unsplash.com/photo-1511467687858-23d96c32e4ae?w=800&h=600&fit=crop&q=80'
 	},
 	{
 		id: 'p_13',
@@ -198,7 +222,9 @@ const productRows: (typeof products.$inferInsert)[] = [
 		rating: 4.6,
 		sold: 745,
 		stock: 30,
-		specs: ['AX3000 Dual Band', 'OFDMA', '4 Antena', 'Gigabit Port']
+		specs: ['AX3000 Dual Band', 'OFDMA', '4 Antena', 'Gigabit Port'],
+		image:
+			'https://images.unsplash.com/photo-1606904825846-647eb07f5be2?w=800&h=600&fit=crop&q=80'
 	}
 ];
 

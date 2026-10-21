@@ -14,15 +14,27 @@
 	const Icon = $derived(categoryIcon(product.category));
 	const discount = $derived(discountPercent(product.price, product.originalPrice));
 	const outOfStock = $derived(product.stock === 0);
+	let imageFailed = $state(false);
 </script>
 
 <Card.Root class="group flex flex-col gap-0 overflow-hidden pt-0 transition-shadow hover:shadow-lg">
 	<div
-		class="relative flex aspect-[4/3] items-center justify-center bg-gradient-to-br from-muted to-muted/40"
+		class="relative flex aspect-[4/3] items-center justify-center overflow-hidden bg-gradient-to-br from-muted to-muted/40"
 	>
-		<Icon
-			class="size-16 text-muted-foreground/70 transition-transform duration-300 group-hover:scale-110"
-		/>
+		{#if imageFailed}
+			<Icon
+				class="size-16 text-muted-foreground/70 transition-transform duration-300 group-hover:scale-110"
+			/>
+		{:else}
+			<img
+				src={product.image}
+				alt={product.name}
+				loading="lazy"
+				decoding="async"
+				class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
+				onerror={() => (imageFailed = true)}
+			/>
+		{/if}
 		{#if discount > 0}
 			<Badge class="absolute top-3 left-3">-{discount}%</Badge>
 		{/if}

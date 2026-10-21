@@ -37,5 +37,6 @@ export const products = sqliteTable('products', {
 	rating: real('rating').notNull().default(0),
 	sold: integer('sold').notNull().default(0),
 	stock: integer('stock').notNull().default(0),
-	specs: text('specs', { mode: 'json' }).$type<string[]>().notNull().default([])
+	specs: text('specs', { mode: 'json' }).$type<string[]>().notNull().default([]),
+	image: text('image').notNull()
 });

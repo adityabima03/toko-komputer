@@ -118,9 +118,21 @@
 						{@const outOfStock = item.product.stock === 0}
 						<li class={['flex gap-4 p-4', outOfStock && 'opacity-60']}>
 							<div
-								class="flex size-20 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-muted to-muted/40"
+								class="size-20 shrink-0 overflow-hidden rounded-lg bg-gradient-to-br from-muted to-muted/40"
 							>
-								<Icon class="size-9 text-muted-foreground/70" />
+								{#if item.product.image}
+									<img
+										src={item.product.image}
+										alt={item.product.name}
+										loading="lazy"
+										decoding="async"
+										class="size-full object-cover"
+									/>
+								{:else}
+									<div class="flex size-full items-center justify-center">
+										<Icon class="size-9 text-muted-foreground/70" />
+									</div>
+								{/if}
 							</div>
 
 							<div class="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:justify-between">
