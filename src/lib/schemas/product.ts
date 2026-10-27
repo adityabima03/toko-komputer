@@ -1,5 +1,17 @@
 import { z } from 'zod';
 
+export const MAX_PRODUCT_IMAGE_BYTES = 2 * 1024 * 1024;
+export const ALLOWED_PRODUCT_IMAGE_TYPES = [
+	'image/jpeg',
+	'image/png',
+	'image/webp',
+	'image/gif'
+] as const;
+
+function hasUploadedFile(value: unknown): value is File {
+	return typeof File !== 'undefined' && value instanceof File && value.size > 0;
+}
+
 export const createProductSchema = z
 	.object({
 		name: z
@@ -22,27 +34,75 @@ export const createProductSchema = z
 		originalPrice: z.string().trim().default(''),
 		stock: z.coerce.number().int().min(0, 'Stok tidak boleh negatif').default(0),
 		specs: z.string().trim().default(''),
-		image: z.string().trim().url('URL gambar tidak valid').max(500, 'URL gambar terlalu panjang')
+		imageUrl: z.string().trim().default(''),
+		imageFile: z.any().optional()
 	})
 	.superRefine((data, ctx) => {
-		if (!data.originalPrice) return;
+		if (data.originalPrice) {
+			const originalPrice = Number(data.originalPrice);
+			if (!Number.isInteger(originalPrice) || originalPrice <= 0) {
+				ctx.addIssue({
+					code: 'custom',
+					message: 'Harga coret harus lebih dari 0',
+					path: ['originalPrice']
+				});
+			} else if (originalPrice <= data.price) {
+				ctx.addIssue({
+					code: 'custom',
+					message: 'Harga coret harus lebih tinggi dari harga jual',
+					path: ['originalPrice']
+				});
+			}
+		}
 
-		const originalPrice = Number(data.originalPrice);
-		if (!Number.isInteger(originalPrice) || originalPrice <= 0) {
+		const hasUrl = data.imageUrl.length > 0;
+		const hasFile = hasUploadedFile(data.imageFile);
+
+		if (!hasUrl && !hasFile) {
 			ctx.addIssue({
 				code: 'custom',
-				message: 'Harga coret harus lebih dari 0',
-				path: ['originalPrice']
+				message: 'Upload gambar atau isi URL gambar',
+				path: ['imageFile']
 			});
 			return;
 		}
 
-		if (originalPrice <= data.price) {
-			ctx.addIssue({
-				code: 'custom',
-				message: 'Harga coret harus lebih tinggi dari harga jual',
-				path: ['originalPrice']
-			});
+		if (hasUrl) {
+			const parsed = z.url('URL gambar tidak valid').safeParse(data.imageUrl);
+			if (!parsed.success) {
+				ctx.addIssue({
+					code: 'custom',
+					message: 'URL gambar tidak valid',
+					path: ['imageUrl']
+				});
+			} else if (data.imageUrl.length > 500) {
+				ctx.addIssue({
+					code: 'custom',
+					message: 'URL gambar terlalu panjang',
+					path: ['imageUrl']
+				});
+			}
+		}
+
+		if (hasFile) {
+			if (
+				!ALLOWED_PRODUCT_IMAGE_TYPES.includes(
+					data.imageFile.type as (typeof ALLOWED_PRODUCT_IMAGE_TYPES)[number]
+				)
+			) {
+				ctx.addIssue({
+					code: 'custom',
+					message: 'Format gambar harus JPG, PNG, WEBP, atau GIF',
+					path: ['imageFile']
+				});
+			}
+			if (data.imageFile.size > MAX_PRODUCT_IMAGE_BYTES) {
+				ctx.addIssue({
+					code: 'custom',
+					message: 'Ukuran gambar maksimal 2 MB',
+					path: ['imageFile']
+				});
+			}
 		}
 	});
 
@@ -51,4 +111,8 @@ export type CreateProductInput = z.infer<typeof createProductSchema>;
 export function parseOptionalPrice(value: string) {
 	if (!value.trim()) return undefined;
 	return Number(value);
+}
+
+export function hasUploadedFileValue(value: unknown): value is File {
+	return hasUploadedFile(value);
 }

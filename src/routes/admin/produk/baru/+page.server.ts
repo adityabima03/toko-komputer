@@ -1,8 +1,13 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { setError, superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
-import { createProductSchema, parseOptionalPrice } from '#lib/schemas/product.js';
+import {
+	createProductSchema,
+	hasUploadedFileValue,
+	parseOptionalPrice
+} from '#lib/schemas/product.js';
 import { createProduct, listCategories } from '#lib/server/data.js';
+import { saveProductImage } from '#lib/server/upload.js';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
@@ -19,6 +24,19 @@ export const actions = {
 		const form = await superValidate(request, zod4(createProductSchema));
 		if (!form.valid) return fail(400, { form });
 
+		let image = form.data.imageUrl.trim();
+		if (hasUploadedFileValue(form.data.imageFile)) {
+			try {
+				image = await saveProductImage(form.data.imageFile);
+			} catch {
+				return setError(form, 'imageFile', 'Gagal menyimpan gambar, coba file lain');
+			}
+		}
+
+		if (!image) {
+			return setError(form, 'imageFile', 'Upload gambar atau isi URL gambar');
+		}
+
 		const result = await createProduct({
 			name: form.data.name,
 			slug: form.data.slug || undefined,
@@ -28,7 +46,7 @@ export const actions = {
 			originalPrice: parseOptionalPrice(form.data.originalPrice),
 			stock: form.data.stock,
 			specs: form.data.specs,
-			image: form.data.image
+			image
 		});
 
 		if ('error' in result) {

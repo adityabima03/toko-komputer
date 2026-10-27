@@ -5,6 +5,7 @@
 	import { toast } from 'svelte-sonner';
 	import RiArrowLeftLine from 'remixicon-svelte/icons/arrow-left-line';
 	import RiLoader4Line from 'remixicon-svelte/icons/loader-4-line';
+	import RiImageAddLine from 'remixicon-svelte/icons/image-add-line';
 	import * as Card from '#lib/components/ui/card/index.js';
 	import * as Form from '#lib/components/ui/form/index.js';
 	import { Button } from '#lib/components/ui/button/index.js';
@@ -17,6 +18,7 @@
 	let { data }: PageProps = $props();
 
 	const groups = $derived(groupCategories(data.categories));
+	let previewUrl = $state<string | null>(null);
 
 	// svelte-ignore state_referenced_locally
 	const form = superForm(data.form, {
@@ -31,6 +33,27 @@
 		'placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50',
 		'disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm dark:bg-input/30'
 	);
+
+	function onImageFileChange(event: Event) {
+		const input = event.currentTarget as HTMLInputElement;
+		const file = input.files?.[0];
+		$formData.imageFile = file;
+
+		if (previewUrl?.startsWith('blob:')) URL.revokeObjectURL(previewUrl);
+
+		if (file && file.size > 0) {
+			previewUrl = URL.createObjectURL(file);
+			$formData.imageUrl = '';
+		} else {
+			previewUrl = null;
+		}
+	}
+
+	$effect(() => {
+		return () => {
+			if (previewUrl?.startsWith('blob:')) URL.revokeObjectURL(previewUrl);
+		};
+	});
 </script>
 
 <svelte:head>
@@ -50,7 +73,7 @@
 
 	<Card.Root>
 		<Card.Content>
-			<form method="POST" class="grid gap-4" use:enhance novalidate>
+			<form method="POST" enctype="multipart/form-data" class="grid gap-4" use:enhance novalidate>
 				<div class="grid gap-4 md:grid-cols-2">
 					<Form.Field {form} name="name" class="md:col-span-2">
 						<Form.Control>
@@ -164,20 +187,65 @@
 						<Form.FieldErrors />
 					</Form.Field>
 
-					<Form.Field {form} name="image" class="md:col-span-2">
-						<Form.Control>
-							{#snippet children({ props })}
-								<Form.Label>URL gambar</Form.Label>
-								<Input
-									{...props}
-									type="url"
-									placeholder="https://images.unsplash.com/..."
-									bind:value={$formData.image}
+					<div class="grid gap-4 md:col-span-2 md:grid-cols-[12rem_1fr]">
+						<div
+							class="flex aspect-square items-center justify-center overflow-hidden rounded-xl border bg-muted/40"
+						>
+							{#if previewUrl || $formData.imageUrl}
+								<img
+									src={previewUrl || $formData.imageUrl}
+									alt="Pratinjau produk"
+									class="size-full object-cover"
 								/>
-							{/snippet}
-						</Form.Control>
-						<Form.FieldErrors />
-					</Form.Field>
+							{:else}
+								<div class="flex flex-col items-center gap-2 p-4 text-center text-muted-foreground">
+									<RiImageAddLine class="size-8" />
+									<p class="text-xs">Pratinjau gambar</p>
+								</div>
+							{/if}
+						</div>
+
+						<div class="grid content-start gap-4">
+							<Form.Field {form} name="imageFile">
+								<Form.Control>
+									{#snippet children({ props })}
+										<Form.Label>Upload gambar</Form.Label>
+										<Input
+											{...props}
+											type="file"
+											accept="image/jpeg,image/png,image/webp,image/gif"
+											onchange={onImageFileChange}
+										/>
+									{/snippet}
+								</Form.Control>
+								<Form.Description>JPG, PNG, WEBP, atau GIF. Maksimal 2 MB.</Form.Description>
+								<Form.FieldErrors />
+							</Form.Field>
+
+							<Form.Field {form} name="imageUrl">
+								<Form.Control>
+									{#snippet children({ props })}
+										<Form.Label>Atau URL gambar</Form.Label>
+										<Input
+											{...props}
+											type="url"
+											placeholder="https://images.unsplash.com/..."
+											bind:value={$formData.imageUrl}
+											oninput={() => {
+												if ($formData.imageUrl.trim()) {
+													$formData.imageFile = undefined;
+													if (previewUrl?.startsWith('blob:')) URL.revokeObjectURL(previewUrl);
+													previewUrl = null;
+												}
+											}}
+										/>
+									{/snippet}
+								</Form.Control>
+								<Form.Description>Isi salah satu: upload file atau URL.</Form.Description>
+								<Form.FieldErrors />
+							</Form.Field>
+						</div>
+					</div>
 
 					<Form.Field {form} name="specs" class="md:col-span-2">
 						<Form.Control>

@@ -30,3 +30,7 @@ vite.config.ts.timestamp-*
 
 # local screenshots
 /.screenshots
+
+# uploaded product images (keep folder)
+/static/uploads/products/*
+!/static/uploads/products/.gitkeep
