@@ -1,26 +1,12 @@
 {
   "version": "7",
-  "dialect": "sqlite",
+  "dialect": "mysql",
   "entries": [
     {
       "idx": 0,
-      "version": "6",
-      "when": 1792054419907,
-      "tag": "0000_init",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1792568679204,
-      "tag": "0001_complex_albert_cleary",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1793076762310,
-      "tag": "0002_category_groups",
+      "version": "5",
+      "when": 1793089750146,
+      "tag": "0000_init_mysql",
       "breakpoints": true
     }
   ]

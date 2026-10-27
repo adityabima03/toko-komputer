@@ -39,11 +39,10 @@ export async function getSessionUserId(cookies: Cookies) {
 /** Mengeluarkan user dari semua perangkat lain, session saat ini tetap aktif. */
 export async function destroyOtherSessions(cookies: Cookies, userId: string) {
 	const currentId = cookies.get(SESSION_COOKIE) ?? '';
-	const removed = await db
+	const result = await db
 		.delete(sessions)
-		.where(and(eq(sessions.userId, userId), ne(sessions.id, currentId)))
-		.returning({ id: sessions.id });
-	return removed.length;
+		.where(and(eq(sessions.userId, userId), ne(sessions.id, currentId)));
+	return result[0].affectedRows;
 }
 
 export async function destroySession(cookies: Cookies) {

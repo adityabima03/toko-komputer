@@ -1,8 +1,8 @@
-import { createClient } from '@libsql/client';
-import { drizzle } from 'drizzle-orm/libsql';
-import { DATABASE_AUTH_TOKEN, DATABASE_URL } from '$app/env/private';
+import { drizzle } from 'drizzle-orm/mysql2';
+import mysql from 'mysql2/promise';
+import { DATABASE_URL } from '$app/env/private';
 import * as schema from './schema.js';
 
-const client = createClient({ url: DATABASE_URL, authToken: DATABASE_AUTH_TOKEN || undefined });
+const pool = mysql.createPool(DATABASE_URL);
 
-export const db = drizzle(client, { schema });
+export const db = drizzle(pool, { schema, mode: 'default' });

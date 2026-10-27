@@ -4,10 +4,7 @@ import { z } from 'zod';
 export const variables = defineEnvVars({
 	DATABASE_URL: {
 		schema: z.string().min(1),
-		description: 'URL database SQLite/libSQL, mis. `file:local.db` atau `libsql://...` (Turso)'
-	},
-	DATABASE_AUTH_TOKEN: {
-		schema: z.string().optional(),
-		description: 'Token auth Turso; kosongkan untuk SQLite lokal'
+		description:
+			'URL MySQL, mis. `mysql://root:@127.0.0.1:3306/toko_komputer` (Laragon password biasanya kosong)'
 	}
 });
