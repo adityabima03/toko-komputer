@@ -2,6 +2,7 @@
 	import { superForm } from 'sveltekit-superforms';
 	import { zod4Client } from 'sveltekit-superforms/adapters';
 	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
 	import { toast } from 'svelte-sonner';
 	import RiComputerLine from 'remixicon-svelte/icons/computer-line';
 	import RiMailLine from 'remixicon-svelte/icons/mail-line';
@@ -25,6 +26,13 @@
 	let { data }: PageProps = $props();
 
 	let showPassword = $state(false);
+
+	const daftarHref = $derived.by(() => {
+		const redirectTo = page.url.searchParams.get('redirectTo');
+		return redirectTo
+			? resolve(`/daftar?redirectTo=${encodeURIComponent(redirectTo)}`)
+			: resolve('/daftar');
+	});
 
 	// svelte-ignore state_referenced_locally
 	const form = superForm(data.form, {
@@ -207,7 +215,16 @@
 					</form>
 				</Card.Content>
 
-				<Card.Footer class="flex-col items-stretch gap-2">
+				<Card.Footer class="flex-col items-stretch gap-3">
+					<p class="text-center text-sm text-muted-foreground">
+						Belum punya akun?
+						<a
+							href={daftarHref}
+							class="font-medium text-primary underline-offset-4 hover:underline"
+						>
+							Daftar
+						</a>
+					</p>
 					<div
 						class="rounded-lg border border-dashed bg-muted/50 p-3 text-xs text-muted-foreground"
 					>

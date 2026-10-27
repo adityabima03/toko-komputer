@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import {
 	and,
 	asc,
@@ -23,6 +24,7 @@ import type {
 } from '#lib/types.js';
 import { db } from './db/index.js';
 import { categories, products, users } from './db/schema.js';
+import { hashPassword } from './password.js';
 
 export { verifyPassword } from './password.js';
 
@@ -34,6 +36,23 @@ export function findUserByEmail(email: string) {
 
 export function findUserById(id: string) {
 	return db.query.users.findFirst({ where: eq(users.id, id) });
+}
+
+export async function createUser(data: { name: string; email: string; password: string }) {
+	const email = data.email.toLowerCase();
+	const existing = await findUserByEmail(email);
+	if (existing) return null;
+
+	const id = `u_${randomBytes(8).toString('hex')}`;
+	await db.insert(users).values({
+		id,
+		name: data.name.trim(),
+		email,
+		role: 'customer',
+		passwordHash: hashPassword(data.password)
+	});
+
+	return findUserById(id);
 }
 
 export async function isEmailTaken(email: string, exceptUserId: string) {
