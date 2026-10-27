@@ -4,6 +4,7 @@
 	import { resolve } from '$app/paths';
 	import { toast } from 'svelte-sonner';
 	import RiUserLine from 'remixicon-svelte/icons/user-line';
+	import RiDashboardLine from 'remixicon-svelte/icons/dashboard-line';
 	import RiShoppingCart2Line from 'remixicon-svelte/icons/shopping-cart-2-line';
 	import RiLogoutBoxRLine from 'remixicon-svelte/icons/logout-box-r-line';
 	import * as Avatar from '#lib/components/ui/avatar/index.js';
@@ -48,6 +49,11 @@
 			<span class="text-xs font-normal text-muted-foreground">{user.email}</span>
 		</DropdownMenu.Label>
 		<DropdownMenu.Separator />
+		{#if user.role === 'admin'}
+			<DropdownMenu.Item onSelect={() => goto(resolve('/admin'))}>
+				<RiDashboardLine /> Panel Admin
+			</DropdownMenu.Item>
+		{/if}
 		<DropdownMenu.Item onSelect={() => goto(resolve('/profil'))}>
 			<RiUserLine /> Profil Saya
 		</DropdownMenu.Item>

@@ -138,3 +138,46 @@ export function listBrands(category?: string | null): Promise<BrandCount[]> {
 		.groupBy(products.brand)
 		.orderBy(asc(products.brand));
 }
+
+export async function getAdminStats() {
+	const [[productCount], [categoryCount], [userCount], [outOfStock], [lowStock]] =
+		await Promise.all([
+			db.select({ value: count() }).from(products),
+			db.select({ value: count() }).from(categories),
+			db.select({ value: count() }).from(users),
+			db.select({ value: count() }).from(products).where(eq(products.stock, 0)),
+			db
+				.select({ value: count() })
+				.from(products)
+				.where(and(gt(products.stock, 0), lte(products.stock, 5)))
+		]);
+
+	return {
+		products: productCount?.value ?? 0,
+		categories: categoryCount?.value ?? 0,
+		users: userCount?.value ?? 0,
+		outOfStock: outOfStock?.value ?? 0,
+		lowStock: lowStock?.value ?? 0
+	};
+}
+
+export async function listAdminProducts() {
+	const rows = await db
+		.select({
+			id: products.id,
+			name: products.name,
+			slug: products.slug,
+			brand: products.brand,
+			category: products.category,
+			categoryName: categories.name,
+			price: products.price,
+			stock: products.stock,
+			sold: products.sold,
+			rating: products.rating
+		})
+		.from(products)
+		.leftJoin(categories, eq(products.category, categories.slug))
+		.orderBy(asc(products.name));
+
+	return rows;
+}

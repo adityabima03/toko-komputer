@@ -1,7 +1,8 @@
-import { fail, redirect } from '@sveltejs/kit';
+import { fail } from '@sveltejs/kit';
 import { message, setError, superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
 import { passwordSchema, profileSchema } from '#lib/schemas/profile.js';
+import { requireUser } from '#lib/server/auth.js';
 import {
 	findUserById,
 	isEmailTaken,
@@ -11,13 +12,6 @@ import {
 import { hashPassword, verifyPassword } from '#lib/server/password.js';
 import { destroyOtherSessions } from '#lib/server/session.js';
 import type { Actions, PageServerLoad } from './$types';
-
-function requireUser(locals: App.Locals, url: URL) {
-	if (!locals.user) {
-		redirect(303, `/login?redirectTo=${encodeURIComponent(url.pathname)}`);
-	}
-	return locals.user;
-}
 
 export const load: PageServerLoad = async ({ locals, url }) => {
 	const user = requireUser(locals, url);
