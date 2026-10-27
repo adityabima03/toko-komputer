@@ -129,6 +129,66 @@ export async function findProductBySlug(slug: string): Promise<Product | null> {
 	return row ? toProduct(row) : null;
 }
 
+export function slugifyProductName(input: string) {
+	return input
+		.toLowerCase()
+		.normalize('NFKD')
+		.replace(/[\u0300-\u036f]/g, '')
+		.replace(/[^a-z0-9]+/g, '-')
+		.replace(/^-+|-+$/g, '')
+		.slice(0, 180);
+}
+
+function parseSpecs(specs: string) {
+	return specs
+		.split(/\n|,/)
+		.map((item) => item.trim())
+		.filter(Boolean)
+		.slice(0, 12);
+}
+
+export async function createProduct(input: {
+	name: string;
+	slug?: string;
+	category: string;
+	brand: string;
+	price: number;
+	originalPrice?: number;
+	stock: number;
+	specs: string;
+	image: string;
+}) {
+	const category = await db.query.categories.findFirst({
+		where: eq(categories.slug, input.category)
+	});
+	if (!category) return { error: 'category' as const };
+
+	const slug = input.slug?.trim() || slugifyProductName(input.name);
+	if (!slug) return { error: 'slug' as const };
+
+	const existing = await findProductBySlug(slug);
+	if (existing) return { error: 'slug_taken' as const };
+
+	const id = `p_${randomBytes(8).toString('hex')}`;
+	await db.insert(products).values({
+		id,
+		name: input.name.trim(),
+		slug,
+		category: input.category,
+		brand: input.brand.trim(),
+		price: input.price,
+		originalPrice: input.originalPrice,
+		stock: input.stock,
+		specs: parseSpecs(input.specs),
+		image: input.image.trim(),
+		rating: 0,
+		sold: 0
+	});
+
+	const product = await findProductBySlug(slug);
+	return product ? { product } : { error: 'failed' as const };
+}
+
 /** Daftar brand beserta jumlah produknya, opsional dibatasi ke satu kategori. */
 export function listBrands(category?: string | null): Promise<BrandCount[]> {
 	return db

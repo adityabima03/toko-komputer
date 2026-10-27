@@ -1,11 +1,21 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
+	import { toast } from 'svelte-sonner';
+	import RiAddLine from 'remixicon-svelte/icons/add-line';
 	import { Badge } from '#lib/components/ui/badge/index.js';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { formatCompact, formatRupiah } from '#lib/format.js';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
+
+	$effect(() => {
+		const created = page.url.searchParams.get('created');
+		if (!created) return;
+		toast.success(`Produk "${created}" berhasil ditambahkan`);
+		history.replaceState({}, '', resolve('/admin/produk'));
+	});
 </script>
 
 <svelte:head>
@@ -18,7 +28,12 @@
 			<h2 class="text-lg font-semibold">Daftar produk</h2>
 			<p class="text-sm text-muted-foreground">{data.products.length} produk di katalog</p>
 		</div>
-		<Button href={resolve('/produk')} variant="outline" size="sm">Lihat di toko</Button>
+		<div class="flex flex-wrap gap-2">
+			<Button href={resolve('/produk')} variant="outline" size="sm">Lihat di toko</Button>
+			<Button href={resolve('/admin/produk/baru')} size="sm">
+				<RiAddLine data-icon="inline-start" /> Tambah produk
+			</Button>
+		</div>
 	</div>
 
 	<div class="overflow-x-auto rounded-xl border">
