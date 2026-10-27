@@ -60,7 +60,7 @@ export function toPublicUser({ id, name, email, role }: UserRecord): User {
 }
 
 export function listCategories(): Promise<Category[]> {
-	return db.select().from(categories);
+	return db.select().from(categories).orderBy(asc(categories.sortOrder));
 }
 
 type ProductRow = typeof products.$inferSelect;

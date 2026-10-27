@@ -10,6 +10,7 @@
 	import ProductGrid from '#lib/components/product-grid.svelte';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { DEFAULT_PRODUCT_FILTER, categoriesQuery, productsQuery } from '#lib/api/products.js';
+	import { groupCategories } from '#lib/categories.js';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -25,6 +26,7 @@
 	});
 
 	const categories = createQuery(() => categoriesQuery());
+	const categoryGroups = $derived(groupCategories(categories.data ?? []));
 	const products = createQuery(() => ({
 		...productsQuery({ ...DEFAULT_PRODUCT_FILTER, category, q: debouncedSearch }),
 		placeholderData: keepPreviousData
@@ -60,8 +62,8 @@
 					{/if}
 				</h1>
 				<p class="max-w-prose text-muted-foreground">
-					Laptop, PC rakitan, komponen, hingga aksesoris dari brand terpercaya. Harga bersaing,
-					garansi resmi, dan pengiriman cepat ke seluruh Indonesia.
+					Laptop, komponen seperti CPU dan GPU, sampai peripheral seperti mouse, keyboard, dan
+					headset. Harga bersaing, garansi resmi, dan pengiriman cepat ke seluruh Indonesia.
 				</p>
 				<div class="flex flex-wrap gap-2">
 					<Button size="lg" onclick={scrollToProducts}>
@@ -92,7 +94,7 @@
 	</section>
 
 	<section id="produk" class="container mx-auto scroll-mt-20 space-y-6 px-4 py-12">
-		<div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+		<div class="space-y-4">
 			<div>
 				<h2 class="text-2xl font-bold tracking-tight">Produk Pilihan</h2>
 				<p class="text-sm text-muted-foreground">
@@ -111,17 +113,39 @@
 				</p>
 			</div>
 
-			<div class="flex flex-wrap gap-2" role="tablist" aria-label="Kategori">
-				{#each [{ slug: 'all', name: 'Semua' }, ...(categories.data ?? [])] as cat (cat.slug)}
+			<div class="grid gap-2" role="tablist" aria-label="Kategori">
+				<div>
 					<Button
 						size="sm"
-						variant={category === cat.slug ? 'default' : 'outline'}
+						variant={category === 'all' ? 'default' : 'outline'}
 						role="tab"
-						aria-selected={category === cat.slug}
-						onclick={() => (category = cat.slug)}
+						aria-selected={category === 'all'}
+						onclick={() => (category = 'all')}
 					>
-						{cat.name}
+						Semua
 					</Button>
+				</div>
+				{#each categoryGroups as group (group.name)}
+					<div class="flex flex-col gap-1.5 sm:flex-row sm:items-center">
+						<span
+							class="w-28 shrink-0 text-xs font-semibold tracking-wide text-muted-foreground uppercase"
+						>
+							{group.name}
+						</span>
+						<div class="flex flex-wrap gap-2">
+							{#each group.categories as cat (cat.slug)}
+								<Button
+									size="sm"
+									variant={category === cat.slug ? 'default' : 'outline'}
+									role="tab"
+									aria-selected={category === cat.slug}
+									onclick={() => (category = cat.slug)}
+								>
+									{cat.name}
+								</Button>
+							{/each}
+						</div>
+					</div>
 				{/each}
 			</div>
 		</div>

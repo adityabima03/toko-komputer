@@ -36,7 +36,7 @@
 				/>
 				<Input
 					type="search"
-					placeholder="Cari laptop, VGA, monitor..."
+					placeholder="Cari CPU, GPU, mouse..."
 					class="pl-8"
 					bind:value={search}
 					aria-label="Cari produk"

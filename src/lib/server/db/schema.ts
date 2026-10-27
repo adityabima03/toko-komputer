@@ -21,7 +21,9 @@ export const sessions = sqliteTable('sessions', {
 
 export const categories = sqliteTable('categories', {
 	slug: text('slug').primaryKey(),
-	name: text('name').notNull()
+	name: text('name').notNull(),
+	groupName: text('group_name').notNull(),
+	sortOrder: integer('sort_order').notNull()
 });
 
 export const products = sqliteTable('products', {

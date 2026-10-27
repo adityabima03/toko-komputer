@@ -8,6 +8,8 @@ export type User = {
 export type Category = {
 	slug: string;
 	name: string;
+	groupName: string;
+	sortOrder: number;
 };
 
 export type Product = {

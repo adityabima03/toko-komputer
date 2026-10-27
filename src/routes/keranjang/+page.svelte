@@ -104,7 +104,7 @@
 			<div>
 				<p class="font-medium">Keranjangmu masih kosong</p>
 				<p class="text-sm text-muted-foreground">
-					Yuk, cari laptop, komponen, atau aksesoris incaranmu.
+					Yuk, cari laptop, komponen, atau peripheral incaranmu.
 				</p>
 			</div>
 			<Button href={resolve('/')} class="mt-2">Mulai Belanja</Button>

@@ -5,6 +5,7 @@
 	import { Input } from '#lib/components/ui/input/index.js';
 	import { Label } from '#lib/components/ui/label/index.js';
 	import { Separator } from '#lib/components/ui/separator/index.js';
+	import { groupCategories } from '#lib/categories.js';
 	import { categoryIcon } from '#lib/category-icons.js';
 	import { activeFilterCount, PRICE_PRESETS } from '#lib/product-filter.js';
 	import { cn } from '#lib/utils.js';
@@ -58,29 +59,53 @@
 
 	const isPresetActive = (p: (typeof PRICE_PRESETS)[number]) =>
 		p.min === filter.minPrice && p.max === filter.maxPrice;
+
+	const groups = $derived(groupCategories(categories));
 </script>
 
 <div class="grid gap-5 text-sm">
 	<section class="grid gap-2">
 		<h3 class="font-semibold">Kategori</h3>
 		<ul class="grid gap-0.5">
-			{#each [{ slug: 'all', name: 'Semua kategori' }, ...categories] as cat (cat.slug)}
-				{@const Icon = cat.slug === 'all' ? RiLayoutGridLine : categoryIcon(cat.slug)}
-				{@const active = filter.category === cat.slug}
-				<li>
-					<button
-						type="button"
-						class={cn(
-							'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-muted',
-							active && 'bg-primary/10 font-medium text-primary hover:bg-primary/15'
-						)}
-						aria-current={active ? 'true' : undefined}
-						onclick={() => onChange({ category: cat.slug })}
-					>
-						<Icon class="size-4 shrink-0" />
-						{cat.name}
-					</button>
+			<li>
+				<button
+					type="button"
+					class={cn(
+						'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-muted',
+						filter.category === 'all' &&
+							'bg-primary/10 font-medium text-primary hover:bg-primary/15'
+					)}
+					aria-current={filter.category === 'all' ? 'true' : undefined}
+					onclick={() => onChange({ category: 'all' })}
+				>
+					<RiLayoutGridLine class="size-4 shrink-0" />
+					Semua kategori
+				</button>
+			</li>
+			{#each groups as group (group.name)}
+				<li
+					class="px-2 pt-3 pb-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase"
+				>
+					{group.name}
 				</li>
+				{#each group.categories as cat (cat.slug)}
+					{@const Icon = categoryIcon(cat.slug)}
+					{@const active = filter.category === cat.slug}
+					<li>
+						<button
+							type="button"
+							class={cn(
+								'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-muted',
+								active && 'bg-primary/10 font-medium text-primary hover:bg-primary/15'
+							)}
+							aria-current={active ? 'true' : undefined}
+							onclick={() => onChange({ category: cat.slug })}
+						>
+							<Icon class="size-4 shrink-0" />
+							{cat.name}
+						</button>
+					</li>
+				{/each}
 			{/each}
 		</ul>
 	</section>
