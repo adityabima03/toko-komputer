@@ -51,7 +51,14 @@
 
 	<div class="grid items-start gap-6 lg:grid-cols-[1fr_18rem]">
 		<div class="grid gap-6">
-			{#if data.order.paymentProof}
+			{#if data.order.paymentProof === 'simulator:qris'}
+				<div class="rounded-xl border bg-muted/40 p-6 text-sm">
+					Pembayaran via <span class="font-medium">QRIS simulasi lokal</span>
+					{#if data.order.paidAt}
+						· lunas {formatDateTime(data.order.paidAt)}
+					{/if}
+				</div>
+			{:else if data.order.paymentProof}
 				<Card.Root>
 					<Card.Header>
 						<Card.Title>Bukti transfer</Card.Title>

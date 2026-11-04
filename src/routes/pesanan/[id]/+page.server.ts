@@ -4,7 +4,12 @@ import {
 	MAX_PAYMENT_PROOF_BYTES
 } from '#lib/payment.js';
 import { requireUser } from '#lib/server/auth.js';
-import { cancelOrder, findOrderById, submitPaymentProof } from '#lib/server/data.js';
+import {
+	cancelOrder,
+	findOrderById,
+	markOrderPaid,
+	submitPaymentProof
+} from '#lib/server/data.js';
 import { savePaymentProof } from '#lib/server/upload.js';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -16,6 +21,16 @@ export const load: PageServerLoad = async ({ locals, url, params }) => {
 };
 
 export const actions = {
+	simulatePay: async ({ locals, url, params }) => {
+		const user = requireUser(locals, url);
+		const result = await markOrderPaid(params.id, user.id);
+		if (result.error === 'not_found') error(404, 'Pesanan tidak ditemukan');
+		if (result.error === 'invalid_status') {
+			return fail(400, { payError: 'Pesanan ini sudah tidak menunggu pembayaran' });
+		}
+		return { payOk: true };
+	},
+
 	uploadProof: async ({ request, locals, url, params }) => {
 		const user = requireUser(locals, url);
 		const formData = await request.formData();

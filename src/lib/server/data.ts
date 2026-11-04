@@ -662,3 +662,22 @@ export async function updateOrderStatus(orderId: string, nextStatus: OrderStatus
 
 	return { order: await findOrderByIdAny(orderId) };
 }
+
+/** Pembayaran otomatis dari simulator lokal (tanpa gateway pihak ketiga). */
+export async function markOrderPaid(orderId: string, userId: string) {
+	const order = await findOrderById(orderId, userId);
+	if (!order) return { error: 'not_found' as const };
+	if (order.status !== 'menunggu_pembayaran') return { error: 'invalid_status' as const };
+
+	await db
+		.update(orders)
+		.set({
+			status: 'dibayar',
+			paidAt: new Date(),
+			updatedAt: new Date(),
+			paymentProof: order.paymentProof ?? 'simulator:qris'
+		})
+		.where(and(eq(orders.id, orderId), eq(orders.userId, userId)));
+
+	return { order: await findOrderById(orderId, userId) };
+}

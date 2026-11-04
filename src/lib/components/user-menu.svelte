@@ -5,7 +5,7 @@
 	import { toast } from 'svelte-sonner';
 	import RiUserLine from 'remixicon-svelte/icons/user-line';
 	import RiDashboardLine from 'remixicon-svelte/icons/dashboard-line';
-	import RiShoppingCart2Line from 'remixicon-svelte/icons/shopping-cart-2-line';
+	import RiShoppingBag3Line from 'remixicon-svelte/icons/shopping-bag-3-line';
 	import RiLogoutBoxRLine from 'remixicon-svelte/icons/logout-box-r-line';
 	import * as Avatar from '#lib/components/ui/avatar/index.js';
 	import * as DropdownMenu from '#lib/components/ui/dropdown-menu/index.js';
@@ -58,7 +58,7 @@
 			<RiUserLine /> Profil Saya
 		</DropdownMenu.Item>
 		<DropdownMenu.Item onSelect={() => goto(resolve('/pesanan'))}>
-			<RiShoppingCart2Line /> Pesanan Saya
+			<RiShoppingBag3Line /> Pesanan Saya
 		</DropdownMenu.Item>
 		<DropdownMenu.Separator />
 		<DropdownMenu.Item

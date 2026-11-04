@@ -73,7 +73,9 @@
 								<p class="text-xs text-muted-foreground">
 									{formatDateTime(order.createdAt)} · {order.itemCount} item
 								</p>
-								{#if order.paymentProof && order.status === 'menunggu_pembayaran'}
+								{#if order.paymentProof &&
+									order.paymentProof !== 'simulator:qris' &&
+									order.status === 'menunggu_pembayaran'}
 									<p class="mt-1 text-xs font-medium text-amber-700 dark:text-amber-400">
 										Ada bukti transfer
 									</p>

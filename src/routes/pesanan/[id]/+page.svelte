@@ -19,20 +19,24 @@
 
 	let uploading = $state(false);
 	let cancelling = $state(false);
+	let paying = $state(false);
 	let proofName = $state('');
+	let showManual = $state(false);
 
 	$effect(() => {
 		const created = page.url.searchParams.get('created');
 		if (!created) return;
 		toast.success('Pesanan berhasil dibuat', {
-			description: 'Silakan transfer sesuai total, lalu unggah bukti pembayaran.'
+			description: 'Bayar lewat QRIS simulasi agar status langsung lunas.'
 		});
 		history.replaceState({}, '', resolve('/pesanan/[id]', { id: data.order.id }));
 	});
 
 	$effect(() => {
+		if (form?.payOk) toast.success('Pembayaran berhasil', { description: 'Status pesanan: dibayar.' });
 		if (form?.proofOk) toast.success('Bukti transfer terkirim. Menunggu konfirmasi admin.');
 		if (form?.cancelOk) toast.success('Pesanan dibatalkan');
+		if (form?.payError) toast.error(form.payError);
 		if (form?.proofError) toast.error(form.proofError);
 		if (form?.cancelError) toast.error(form.cancelError);
 	});
@@ -70,107 +74,171 @@
 			{#if data.order.status === 'menunggu_pembayaran'}
 				<Card.Root>
 					<Card.Header>
-						<Card.Title>Pembayaran</Card.Title>
+						<Card.Title>Bayar otomatis (simulasi QRIS)</Card.Title>
 						<Card.Description>
-							Transfer sesuai total, lalu unggah bukti agar admin bisa mengonfirmasi.
+							Tanpa daftar Midtrans. Klik bayar, status pesanan langsung jadi dibayar.
 						</Card.Description>
 					</Card.Header>
 					<Card.Content class="space-y-4 text-sm">
-						<div class="rounded-xl bg-muted/60 p-4">
-							<p class="text-muted-foreground">Transfer ke</p>
-							<p class="mt-1 text-base font-semibold">
-								{BANK_TRANSFER.bank} · {BANK_TRANSFER.accountNumber}
-							</p>
-							<p>{BANK_TRANSFER.accountName}</p>
-							<p class="mt-3 text-muted-foreground">Jumlah transfer</p>
-							<p class="text-xl font-bold tabular-nums">{formatRupiah(data.order.total)}</p>
-						</div>
-
-						{#if data.order.paymentProof}
-							<div class="space-y-2">
-								<p class="font-medium">Bukti yang sudah diunggah</p>
-								<a
-									href={data.order.paymentProof}
-									target="_blank"
-									rel="noreferrer"
-									class="block overflow-hidden rounded-xl border"
-								>
-									<img
-										src={data.order.paymentProof}
-										alt="Bukti transfer"
-										class="max-h-64 w-full object-contain bg-muted/40"
-									/>
-								</a>
-								<p class="text-xs text-muted-foreground">
-									Menunggu konfirmasi admin. Kamu bisa mengganti bukti jika perlu.
+						<div class="flex flex-col items-center gap-3 rounded-xl border border-dashed p-6 text-center">
+							<div
+								class="grid size-44 grid-cols-5 gap-1 rounded-lg bg-foreground p-3"
+								aria-hidden="true"
+							>
+								{#each Array.from({ length: 25 }, (_, i) => i) as cell (cell)}
+									<span
+										class={[
+											'rounded-[2px]',
+											[0, 1, 2, 4, 5, 6, 8, 10, 12, 14, 16, 18, 20, 22, 23, 24].includes(cell)
+												? 'bg-background'
+												: 'bg-foreground'
+										]}
+									></span>
+								{/each}
+							</div>
+							<div>
+								<p class="font-medium">QRIS Simulator · TokoKomputer</p>
+								<p class="text-muted-foreground">
+									Total {formatRupiah(data.order.total)} · #{data.order.id.slice(-8).toUpperCase()}
 								</p>
 							</div>
-						{/if}
+							<form
+								method="POST"
+								action="?/simulatePay"
+								class="w-full max-w-xs"
+								use:enhance={() => {
+									paying = true;
+									return async ({ update }) => {
+										paying = false;
+										await update();
+									};
+								}}
+							>
+								<Button type="submit" size="lg" class="w-full" disabled={paying}>
+									{#if paying}
+										<RiLoader4Line class="animate-spin" /> Memproses...
+									{:else}
+										Bayar Sekarang
+									{/if}
+								</Button>
+							</form>
+							<p class="text-xs text-muted-foreground">
+								Ini sandbox lokal untuk uji coba. Bukan pembayaran bank/e-wallet sungguhan.
+							</p>
+						</div>
 
-						<form
-							method="POST"
-							action="?/uploadProof"
-							enctype="multipart/form-data"
-							class="space-y-3"
-							use:enhance={() => {
-								uploading = true;
-								return async ({ update }) => {
-									uploading = false;
-									proofName = '';
-									await update();
-								};
-							}}
-						>
-							<label class="grid gap-1.5">
-								<span class="font-medium">Unggah bukti transfer</span>
-								<input
-									type="file"
-									name="proof"
-									accept="image/jpeg,image/png,image/webp,image/gif"
-									required
-									class="text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-primary-foreground"
-									onchange={(e) => {
-										proofName = e.currentTarget.files?.[0]?.name ?? '';
+						<div class="border-t pt-4">
+							<button
+								type="button"
+								class="text-sm font-medium text-primary underline-offset-4 hover:underline"
+								onclick={() => (showManual = !showManual)}
+							>
+								{showManual ? 'Sembunyikan transfer manual' : 'Atau bayar transfer manual'}
+							</button>
+						</div>
+
+						{#if showManual}
+							<div class="space-y-4">
+								<div class="rounded-xl bg-muted/60 p-4">
+									<p class="text-muted-foreground">Transfer ke</p>
+									<p class="mt-1 text-base font-semibold">
+										{BANK_TRANSFER.bank} · {BANK_TRANSFER.accountNumber}
+									</p>
+									<p>{BANK_TRANSFER.accountName}</p>
+									<p class="mt-3 text-muted-foreground">Jumlah transfer</p>
+									<p class="text-xl font-bold tabular-nums">{formatRupiah(data.order.total)}</p>
+								</div>
+
+								{#if data.order.paymentProof && data.order.paymentProof !== 'simulator:qris'}
+									<div class="space-y-2">
+										<p class="font-medium">Bukti yang sudah diunggah</p>
+										<a
+											href={data.order.paymentProof}
+											target="_blank"
+											rel="noreferrer"
+											class="block overflow-hidden rounded-xl border"
+										>
+											<img
+												src={data.order.paymentProof}
+												alt="Bukti transfer"
+												class="max-h-64 w-full object-contain bg-muted/40"
+											/>
+										</a>
+										<p class="text-xs text-muted-foreground">
+											Menunggu konfirmasi admin. Kamu bisa mengganti bukti jika perlu.
+										</p>
+									</div>
+								{/if}
+
+								<form
+									method="POST"
+									action="?/uploadProof"
+									enctype="multipart/form-data"
+									class="space-y-3"
+									use:enhance={() => {
+										uploading = true;
+										return async ({ update }) => {
+											uploading = false;
+											proofName = '';
+											await update();
+										};
 									}}
-								/>
-								{#if proofName}
-									<span class="text-xs text-muted-foreground">{proofName}</span>
-								{/if}
-							</label>
-							<Button type="submit" disabled={uploading}>
-								{#if uploading}
-									<RiLoader4Line class="animate-spin" /> Mengunggah...
-								{:else}
-									Kirim Bukti Transfer
-								{/if}
-							</Button>
-						</form>
+								>
+									<label class="grid gap-1.5">
+										<span class="font-medium">Unggah bukti transfer</span>
+										<input
+											type="file"
+											name="proof"
+											accept="image/jpeg,image/png,image/webp,image/gif"
+											required
+											class="text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-primary-foreground"
+											onchange={(e) => {
+												proofName = e.currentTarget.files?.[0]?.name ?? '';
+											}}
+										/>
+										{#if proofName}
+											<span class="text-xs text-muted-foreground">{proofName}</span>
+										{/if}
+									</label>
+									<Button type="submit" disabled={uploading}>
+										{#if uploading}
+											<RiLoader4Line class="animate-spin" /> Mengunggah...
+										{:else}
+											Kirim Bukti Transfer
+										{/if}
+									</Button>
+								</form>
+							</div>
+						{/if}
 					</Card.Content>
 				</Card.Root>
-			{:else if data.order.paymentProof}
+			{:else if data.order.paidAt}
 				<Card.Root>
 					<Card.Header>
-						<Card.Title>Bukti pembayaran</Card.Title>
+						<Card.Title>Pembayaran</Card.Title>
+						<Card.Description>
+							Lunas {formatDateTime(data.order.paidAt)}
+							{#if data.order.paymentProof === 'simulator:qris'}
+								· via QRIS simulasi
+							{/if}
+						</Card.Description>
 					</Card.Header>
-					<Card.Content>
-						<a
-							href={data.order.paymentProof}
-							target="_blank"
-							rel="noreferrer"
-							class="block overflow-hidden rounded-xl border"
-						>
-							<img
-								src={data.order.paymentProof}
-								alt="Bukti transfer"
-								class="max-h-64 w-full object-contain bg-muted/40"
-							/>
-						</a>
-						{#if data.order.paidAt}
-							<p class="mt-2 text-sm text-muted-foreground">
-								Dikonfirmasi {formatDateTime(data.order.paidAt)}
-							</p>
-						{/if}
-					</Card.Content>
+					{#if data.order.paymentProof && data.order.paymentProof !== 'simulator:qris'}
+						<Card.Content>
+							<a
+								href={data.order.paymentProof}
+								target="_blank"
+								rel="noreferrer"
+								class="block overflow-hidden rounded-xl border"
+							>
+								<img
+									src={data.order.paymentProof}
+									alt="Bukti transfer"
+									class="max-h-64 w-full object-contain bg-muted/40"
+								/>
+							</a>
+						</Card.Content>
+					{/if}
 				</Card.Root>
 			{/if}
 
