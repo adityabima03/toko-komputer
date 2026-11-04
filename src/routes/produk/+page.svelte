@@ -1,9 +1,8 @@
 <script lang="ts">
-	import { createQuery, keepPreviousData } from '@tanstack/svelte-query';
 	import { untrack } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { page } from '$app/state';
+	import { navigating } from '$app/state';
 	import RiCloseLine from 'remixicon-svelte/icons/close-line';
 	import RiFilter3Line from 'remixicon-svelte/icons/filter-3-line';
 	import SiteHeader from '#lib/components/site-header.svelte';
@@ -13,12 +12,10 @@
 	import * as Sheet from '#lib/components/ui/sheet/index.js';
 	import { Badge } from '#lib/components/ui/badge/index.js';
 	import { Button } from '#lib/components/ui/button/index.js';
-	import { brandsQuery, categoriesQuery, productsQuery } from '#lib/api/products.js';
 	import { formatRupiah } from '#lib/format.js';
 	import {
 		activeFilterCount,
 		DEFAULT_PRODUCT_FILTER,
-		parseProductFilter,
 		SORT_OPTIONS,
 		toSearchParams
 	} from '#lib/product-filter.js';
@@ -27,27 +24,17 @@
 
 	let { data }: PageProps = $props();
 
-	const filter = $derived(parseProductFilter(page.url.searchParams));
+	const filter = $derived(data.filter);
 	const filterCount = $derived(activeFilterCount(filter));
-
-	const categories = createQuery(() => categoriesQuery());
-	const brands = createQuery(() => ({
-		...brandsQuery(filter.category),
-		placeholderData: keepPreviousData
-	}));
-	const products = createQuery(() => ({
-		...productsQuery(filter),
-		placeholderData: keepPreviousData
-	}));
+	const pending = $derived(!!navigating);
 
 	const categoryName = $derived(
-		categories.data?.find((c) => c.slug === filter.category)?.name ?? 'Semua Produk'
+		data.categories.find((c) => c.slug === filter.category)?.name ?? 'Semua Produk'
 	);
 	const sortLabel = $derived(SORT_OPTIONS.find((o) => o.value === filter.sort)?.label);
 
 	function updateFilter(patch: Partial<ProductFilter>) {
 		const next = { ...filter, ...patch };
-		// Brand yang dipilih belum tentu ada di kategori baru.
 		if (patch.category !== undefined && patch.category !== filter.category) next.brands = [];
 		const qs = toSearchParams(next).toString();
 		goto(qs ? resolve(`/produk?${qs}`) : resolve('/produk'), { replace: true, reset: false });
@@ -67,7 +54,6 @@
 		return () => clearTimeout(timer);
 	});
 
-	// Sinkronkan kolom cari saat URL berubah dari luar (mis. tombol Back).
 	$effect(() => {
 		const q = filter.q;
 		untrack(() => {
@@ -112,8 +98,8 @@
 	<ProductFilters
 		{filter}
 		{idPrefix}
-		categories={categories.data ?? []}
-		brands={brands.data ?? []}
+		categories={data.categories}
+		brands={data.brands}
 		onChange={updateFilter}
 		onReset={resetFilter}
 	/>
@@ -126,12 +112,8 @@
 		<div>
 			<h1 class="text-2xl font-bold tracking-tight">{categoryName}</h1>
 			<p class="text-sm text-muted-foreground">
-				{#if products.data}
-					{products.data.length} produk{#if filter.q}
-						untuk "{filter.q}"{/if}
-				{:else}
-					Memuat produk...
-				{/if}
+				{data.products.length} produk{#if filter.q}
+					untuk "{filter.q}"{/if}
 			</p>
 		</div>
 
@@ -154,7 +136,7 @@
 					<div class="px-4">{@render filters('sheet')}</div>
 					<Sheet.Footer class="sticky bottom-0 border-t bg-popover">
 						<Button onclick={() => (filterSheetOpen = false)}>
-							Tampilkan {products.data?.length ?? 0} produk
+							Tampilkan {data.products.length} produk
 						</Button>
 					</Sheet.Footer>
 				</Sheet.Content>
@@ -202,7 +184,7 @@
 		</aside>
 
 		<section aria-label="Daftar produk">
-			<ProductGrid query={products} class="sm:grid-cols-2 xl:grid-cols-3">
+			<ProductGrid products={data.products} {pending} class="sm:grid-cols-2 xl:grid-cols-3">
 				{#snippet empty()}
 					<p class="font-medium">Tidak ada produk yang cocok</p>
 					<p class="text-sm text-muted-foreground">Coba kurangi filter atau ubah kata kunci.</p>

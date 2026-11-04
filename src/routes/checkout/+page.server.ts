@@ -3,16 +3,17 @@ import { message, superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
 import { checkoutSchema, parseCheckoutItems } from '#lib/schemas/checkout.js';
 import { requireUser } from '#lib/server/auth.js';
-import { createOrder, listAddresses } from '#lib/server/data.js';
+import { createOrder, listAddresses, listProducts } from '#lib/server/data.js';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
 	const user = requireUser(locals, url);
-	const addresses = await listAddresses(user.id);
+	const [addresses, products] = await Promise.all([listAddresses(user.id), listProducts()]);
 	const defaultAddress = addresses.find((a) => a.isDefault) ?? addresses[0];
 
 	return {
 		addresses,
+		products,
 		form: await superValidate(
 			{
 				addressId: defaultAddress?.id ?? '',

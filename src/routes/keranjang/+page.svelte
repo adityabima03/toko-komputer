@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { createQuery } from '@tanstack/svelte-query';
 	import { untrack } from 'svelte';
 	import { resolve } from '$app/paths';
 	import { toast } from 'svelte-sonner';
@@ -14,7 +13,6 @@
 	import { Badge } from '#lib/components/ui/badge/index.js';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { Separator } from '#lib/components/ui/separator/index.js';
-	import { DEFAULT_PRODUCT_FILTER, productsQuery } from '#lib/api/products.js';
 	import { categoryIcon } from '#lib/category-icons.js';
 	import { formatRupiah } from '#lib/format.js';
 	import { calcShippingFee, FREE_SHIPPING_MIN } from '#lib/shipping.js';
@@ -30,11 +28,9 @@
 			: `${resolve('/login')}?redirectTo=${encodeURIComponent('/checkout')}`
 	);
 
-	const latest = createQuery(() => productsQuery(DEFAULT_PRODUCT_FILTER));
-
 	$effect(() => {
-		const products = latest.data;
-		if (products && untrack(() => cart.sync(products))) {
+		const products = data.products;
+		if (untrack(() => cart.sync(products))) {
 			toast.info('Keranjang diperbarui', {
 				description: 'Harga atau stok beberapa produk telah berubah.'
 			});

@@ -23,7 +23,7 @@
 		const message = noticeMessages[notice];
 		if (message) toast.error(message);
 
-		const url = new URL(page.url);
+		const url = new URL(page.url.href);
 		url.searchParams.delete('notice');
 		history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
 	});

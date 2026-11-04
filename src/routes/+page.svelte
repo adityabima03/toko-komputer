@@ -1,6 +1,8 @@
 <script lang="ts">
-	import { createQuery, keepPreviousData } from '@tanstack/svelte-query';
+	import { untrack } from 'svelte';
+	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import { navigating } from '$app/state';
 	import RiArrowRightLine from 'remixicon-svelte/icons/arrow-right-line';
 	import RiTruckLine from 'remixicon-svelte/icons/truck-line';
 	import RiShieldCheckLine from 'remixicon-svelte/icons/shield-check-line';
@@ -9,34 +11,44 @@
 	import SiteHeader from '#lib/components/site-header.svelte';
 	import ProductGrid from '#lib/components/product-grid.svelte';
 	import { Button } from '#lib/components/ui/button/index.js';
-	import { DEFAULT_PRODUCT_FILTER, categoriesQuery, productsQuery } from '#lib/api/products.js';
 	import { groupCategories } from '#lib/categories.js';
+	import { toSearchParams } from '#lib/product-filter.js';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
 
-	let search = $state('');
-	let debouncedSearch = $state('');
-	let category = $state(DEFAULT_PRODUCT_FILTER.category);
+	let search = $state(untrack(() => data.filter.q));
 
 	$effect(() => {
-		const value = search;
-		const timer = setTimeout(() => (debouncedSearch = value.trim()), 300);
+		const value = search.trim();
+		const timer = setTimeout(() => {
+			if (value === data.filter.q) return;
+			const qs = toSearchParams({ ...data.filter, q: value }).toString();
+			goto(qs ? resolve(`/?${qs}`) : resolve('/'), { replace: true, reset: false });
+		}, 300);
 		return () => clearTimeout(timer);
 	});
 
-	const categories = createQuery(() => categoriesQuery());
-	const categoryGroups = $derived(groupCategories(categories.data ?? []));
-	const products = createQuery(() => ({
-		...productsQuery({ ...DEFAULT_PRODUCT_FILTER, category, q: debouncedSearch }),
-		placeholderData: keepPreviousData
-	}));
+	$effect(() => {
+		const q = data.filter.q;
+		untrack(() => {
+			if (search.trim() !== q) search = q;
+		});
+	});
+
+	const categoryGroups = $derived(groupCategories(data.categories));
+	const pending = $derived(!!navigating);
 
 	const features = [
 		{ icon: RiTruckLine, title: 'Gratis Ongkir', desc: 'Min. belanja Rp1 juta se-Indonesia' },
 		{ icon: RiShieldCheckLine, title: 'Garansi Resmi', desc: '100% produk original bergaransi' },
 		{ icon: RiCustomerService2Line, title: 'Konsultasi Rakit PC', desc: 'Tim teknisi siap 24/7' }
 	];
+
+	function setCategory(category: string) {
+		const qs = toSearchParams({ ...data.filter, category }).toString();
+		goto(qs ? resolve(`/?${qs}`) : resolve('/'), { replace: true, reset: false });
+	}
 
 	function scrollToProducts() {
 		document.getElementById('produk')?.scrollIntoView({ behavior: 'smooth' });
@@ -98,8 +110,8 @@
 			<div>
 				<h2 class="text-2xl font-bold tracking-tight">Produk Pilihan</h2>
 				<p class="text-sm text-muted-foreground">
-					{#if debouncedSearch}
-						Hasil pencarian untuk "{debouncedSearch}"
+					{#if data.filter.q}
+						Hasil pencarian untuk "{data.filter.q}"
 					{:else}
 						Produk terlaris minggu ini
 					{/if}
@@ -117,10 +129,10 @@
 				<div>
 					<Button
 						size="sm"
-						variant={category === 'all' ? 'default' : 'outline'}
+						variant={data.filter.category === 'all' ? 'default' : 'outline'}
 						role="tab"
-						aria-selected={category === 'all'}
-						onclick={() => (category = 'all')}
+						aria-selected={data.filter.category === 'all'}
+						onclick={() => setCategory('all')}
 					>
 						Semua
 					</Button>
@@ -136,10 +148,10 @@
 							{#each group.categories as cat (cat.slug)}
 								<Button
 									size="sm"
-									variant={category === cat.slug ? 'default' : 'outline'}
+									variant={data.filter.category === cat.slug ? 'default' : 'outline'}
 									role="tab"
-									aria-selected={category === cat.slug}
-									onclick={() => (category = cat.slug)}
+									aria-selected={data.filter.category === cat.slug}
+									onclick={() => setCategory(cat.slug)}
 								>
 									{cat.name}
 								</Button>
@@ -150,7 +162,7 @@
 			</div>
 		</div>
 
-		<ProductGrid query={products} />
+		<ProductGrid products={data.products} {pending} />
 	</section>
 </main>
 
@@ -159,6 +171,6 @@
 		class="container mx-auto flex flex-col items-center justify-between gap-2 px-4 py-6 text-sm text-muted-foreground md:flex-row"
 	>
 		<p>© {new Date().getFullYear()} TokoKomputer. Semua hak dilindungi.</p>
-		<p>Dibangun dengan SvelteKit, shadcn-svelte & TanStack Query</p>
+		<p>Dibangun dengan SvelteKit & shadcn-svelte</p>
 	</div>
 </footer>

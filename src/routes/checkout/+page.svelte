@@ -4,7 +4,6 @@
 	import { toast } from 'svelte-sonner';
 	import { superForm } from 'sveltekit-superforms';
 	import { zod4Client } from 'sveltekit-superforms/adapters';
-	import { createQuery } from '@tanstack/svelte-query';
 	import { untrack } from 'svelte';
 	import RiArrowLeftLine from 'remixicon-svelte/icons/arrow-left-line';
 	import RiLoader4Line from 'remixicon-svelte/icons/loader-4-line';
@@ -16,7 +15,6 @@
 	import { Badge } from '#lib/components/ui/badge/index.js';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { Separator } from '#lib/components/ui/separator/index.js';
-	import { DEFAULT_PRODUCT_FILTER, productsQuery } from '#lib/api/products.js';
 	import { categoryIcon } from '#lib/category-icons.js';
 	import { formatRupiah } from '#lib/format.js';
 	import { checkoutSchema } from '#lib/schemas/checkout.js';
@@ -27,11 +25,9 @@
 
 	let { data }: PageProps = $props();
 
-	const latest = createQuery(() => productsQuery(DEFAULT_PRODUCT_FILTER));
-
 	$effect(() => {
-		const products = latest.data;
-		if (products && untrack(() => cart.sync(products))) {
+		const products = data.products;
+		if (untrack(() => cart.sync(products))) {
 			toast.info('Keranjang diperbarui', {
 				description: 'Harga atau stok beberapa produk telah berubah.'
 			});
