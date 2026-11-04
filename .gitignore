@@ -31,6 +31,9 @@ vite.config.ts.timestamp-*
 # local screenshots
 /.screenshots
 
+# preview/export sementara
+/.tmp
+
 # uploaded product images (keep folder)
 /static/uploads/products/*
 !/static/uploads/products/.gitkeep
