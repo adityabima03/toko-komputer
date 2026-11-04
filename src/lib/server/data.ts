@@ -36,6 +36,7 @@ import type { CheckoutItemInput } from '#lib/schemas/checkout.js';
 import { db } from './db/index.js';
 import { addresses, categories, orderItems, orders, products, users } from './db/schema.js';
 import { hashPassword } from './password.js';
+import { productImagePublicPath, saveProductImageFile } from './product-image.js';
 
 export { verifyPassword } from './password.js';
 
@@ -167,7 +168,8 @@ export async function createProduct(input: {
 	originalPrice?: number;
 	stock: number;
 	specs: string;
-	image: string;
+	image?: string;
+	imageFile?: File;
 }) {
 	const category = await db.query.categories.findFirst({
 		where: eq(categories.slug, input.category)
@@ -180,7 +182,12 @@ export async function createProduct(input: {
 	const existing = await findProductBySlug(slug);
 	if (existing) return { error: 'slug_taken' as const };
 
+	const hasFile = Boolean(input.imageFile && input.imageFile.size > 0);
+	const imageUrl = input.image?.trim() || '';
+	if (!hasFile && !imageUrl) return { error: 'image' as const };
+
 	const id = `p_${randomBytes(8).toString('hex')}`;
+
 	await db.insert(products).values({
 		id,
 		name: input.name.trim(),
@@ -191,10 +198,19 @@ export async function createProduct(input: {
 		originalPrice: input.originalPrice,
 		stock: input.stock,
 		specs: parseSpecs(input.specs),
-		image: input.image.trim(),
+		image: hasFile ? productImagePublicPath(id) : imageUrl,
 		rating: 0,
 		sold: 0
 	});
+
+	if (hasFile && input.imageFile) {
+		try {
+			await saveProductImageFile(id, input.imageFile);
+		} catch {
+			await db.delete(products).where(eq(products.id, id));
+			return { error: 'image' as const };
+		}
+	}
 
 	const product = await findProductBySlug(slug);
 	return product ? { product } : { error: 'failed' as const };

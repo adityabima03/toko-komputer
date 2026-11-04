@@ -7,7 +7,6 @@ import {
 	parseOptionalPrice
 } from '#lib/schemas/product.js';
 import { createProduct, listCategories } from '#lib/server/data.js';
-import { saveProductImage } from '#lib/server/upload.js';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
@@ -24,16 +23,9 @@ export const actions = {
 		const form = await superValidate(request, zod4(createProductSchema));
 		if (!form.valid) return fail(400, { form });
 
-		let image = form.data.imageUrl.trim();
-		if (hasUploadedFileValue(form.data.imageFile)) {
-			try {
-				image = await saveProductImage(form.data.imageFile);
-			} catch {
-				return setError(form, 'imageFile', 'Gagal menyimpan gambar, coba file lain');
-			}
-		}
-
-		if (!image) {
+		const hasFile = hasUploadedFileValue(form.data.imageFile);
+		const imageUrl = form.data.imageUrl.trim();
+		if (!hasFile && !imageUrl) {
 			return setError(form, 'imageFile', 'Upload gambar atau isi URL gambar');
 		}
 
@@ -46,12 +38,16 @@ export const actions = {
 			originalPrice: parseOptionalPrice(form.data.originalPrice),
 			stock: form.data.stock,
 			specs: form.data.specs,
-			image
+			image: imageUrl || undefined,
+			imageFile: hasFile ? form.data.imageFile : undefined
 		});
 
 		if ('error' in result) {
 			if (result.error === 'category') {
 				return setError(form, 'category', 'Kategori tidak ditemukan');
+			}
+			if (result.error === 'image') {
+				return setError(form, 'imageFile', 'Gagal menyimpan gambar, coba file lain');
 			}
 			if (result.error === 'slug' || result.error === 'slug_taken') {
 				return setError(

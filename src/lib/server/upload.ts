@@ -9,24 +9,17 @@ const EXT_BY_TYPE: Record<string, string> = {
 	'image/gif': 'gif'
 };
 
-async function saveImage(file: File, folder: 'products' | 'payments') {
+/** Bukti pembayaran tetap di disk; gambar produk disimpan di DB (lihat product-image.ts). */
+export async function savePaymentProof(file: File) {
 	const ext = EXT_BY_TYPE[file.type];
 	if (!ext) throw new Error('Tipe gambar tidak didukung');
 
 	const filename = `${Date.now()}-${randomBytes(6).toString('hex')}.${ext}`;
-	const dir = path.join(process.cwd(), 'static', 'uploads', folder);
+	const dir = path.join(process.cwd(), 'static', 'uploads', 'payments');
 	await mkdir(dir, { recursive: true });
 
 	const buffer = Buffer.from(await file.arrayBuffer());
 	await writeFile(path.join(dir, filename), buffer);
 
-	return `/uploads/${folder}/${filename}`;
-}
-
-export function saveProductImage(file: File) {
-	return saveImage(file, 'products');
-}
-
-export function savePaymentProof(file: File) {
-	return saveImage(file, 'payments');
+	return `/uploads/payments/${filename}`;
 }

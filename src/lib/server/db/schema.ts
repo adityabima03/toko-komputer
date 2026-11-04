@@ -1,5 +1,6 @@
 import {
 	boolean,
+	customType,
 	double,
 	int,
 	json,
@@ -8,6 +9,12 @@ import {
 	timestamp,
 	varchar
 } from 'drizzle-orm/mysql-core';
+
+const longblob = customType<{ data: Buffer; driverData: Buffer }>({
+	dataType() {
+		return 'longblob';
+	}
+});
 
 export const users = mysqlTable('users', {
 	id: varchar('id', { length: 64 }).primaryKey(),
@@ -47,7 +54,17 @@ export const products = mysqlTable('products', {
 	sold: int('sold').notNull().default(0),
 	stock: int('stock').notNull().default(0),
 	specs: json('specs').$type<string[]>().notNull().default([]),
+	/** Path publik, biasanya /api/products/{id}/image */
 	image: varchar('image', { length: 500 }).notNull()
+});
+
+/** Binary gambar produk — dipisah supaya list produk tidak ikut load BLOB. */
+export const productImages = mysqlTable('product_images', {
+	productId: varchar('product_id', { length: 64 })
+		.primaryKey()
+		.references(() => products.id, { onDelete: 'cascade' }),
+	mime: varchar('mime', { length: 64 }).notNull(),
+	data: longblob('data').notNull()
 });
 
 export const addresses = mysqlTable('addresses', {

@@ -34,3 +34,7 @@ vite.config.ts.timestamp-*
 # uploaded product images (keep folder)
 /static/uploads/products/*
 !/static/uploads/products/.gitkeep
+
+# katalog produk sekarang di DB (product_images), bukan di repo
+/static/products/*
+!/static/products/.gitkeep
