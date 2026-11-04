@@ -395,7 +395,7 @@ const productRows: (typeof products.$inferInsert)[] = [
 		sold: 754,
 		stock: 31,
 		specs: ['PCIe 4.0 x4', 'Read 7300MB/s', '1TB', 'Heatsink opsional'],
-		image: 'https://images.unsplash.com/photo-1597872200969-2b65d56bd16b?w=800&h=600&fit=crop&q=80'
+		image: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&h=600&fit=crop&q=80'
 	},
 	{
 		id: 'p_27',
@@ -422,7 +422,7 @@ const productRows: (typeof products.$inferInsert)[] = [
 		sold: 418,
 		stock: 13,
 		specs: ['8GB GDDR6', 'DLSS 3', 'Triple Fan', 'PCIe 4.0'],
-		image: 'https://images.unsplash.com/photo-1591488320449-011701bb6704?w=800&h=600&fit=crop&q=80'
+		image: 'https://images.unsplash.com/photo-1624705002806-5d72df19c3ad?w=800&h=600&fit=crop&q=80'
 	},
 	{
 		id: 'p_29',
@@ -435,7 +435,7 @@ const productRows: (typeof products.$inferInsert)[] = [
 		sold: 1_305,
 		stock: 70,
 		specs: ['16GB (2x8GB)', 'DDR4-3200', 'CL16', 'RGB'],
-		image: 'https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?w=800&h=600&fit=crop&q=80'
+		image: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=800&h=600&fit=crop&q=80'
 	},
 	{
 		id: 'p_30',
@@ -461,7 +461,7 @@ const productRows: (typeof products.$inferInsert)[] = [
 		sold: 61,
 		stock: 7,
 		specs: ['27" IPS', 'QHD 144Hz', '95% DCI-P3', 'USB-C 90W'],
-		image: 'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=800&h=600&fit=crop&q=80'
+		image: 'https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=800&h=600&fit=crop&q=80'
 	},
 	{
 		id: 'p_32',
@@ -475,7 +475,7 @@ const productRows: (typeof products.$inferInsert)[] = [
 		sold: 876,
 		stock: 26,
 		specs: ['24" IPS', '1920x1080', '165Hz 1ms', 'G-Sync Compatible'],
-		image: 'https://images.unsplash.com/photo-1616763355548-1b606f439f86?w=800&h=600&fit=crop&q=80'
+		image: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800&h=600&fit=crop&q=80'
 	},
 	{
 		id: 'p_33',
@@ -488,7 +488,7 @@ const productRows: (typeof products.$inferInsert)[] = [
 		sold: 640,
 		stock: 33,
 		specs: ['24" IPS', 'Full HD', '75Hz', 'Eye-care Low Blue Light'],
-		image: 'https://images.unsplash.com/photo-1547082299-de196ea013d6?w=800&h=600&fit=crop&q=80'
+		image: 'https://images.unsplash.com/photo-1587825140708-dfaf72ae4b04?w=800&h=600&fit=crop&q=80'
 	},
 	{
 		id: 'p_34',
@@ -541,7 +541,7 @@ const productRows: (typeof products.$inferInsert)[] = [
 		sold: 510,
 		stock: 36,
 		specs: ['1TB', '1050MB/s', 'IP65', 'USB-C'],
-		image: 'https://images.unsplash.com/photo-1597872200969-2b65d56bd16b?w=800&h=600&fit=crop&q=80'
+		image: 'https://images.unsplash.com/photo-1625948515291-69613efd103f?w=800&h=600&fit=crop&q=80'
 	},
 	{
 		id: 'p_38',
@@ -581,7 +581,7 @@ const productRows: (typeof products.$inferInsert)[] = [
 		sold: 142,
 		stock: 12,
 		specs: ['AX5700', '2.5G WAN', 'AiMesh', 'Gaming Port'],
-		image: 'https://images.unsplash.com/photo-1606904825846-647eb07f5be2?w=800&h=600&fit=crop&q=80'
+		image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&h=600&fit=crop&q=80'
 	},
 	{
 		id: 'p_41',
@@ -608,7 +608,7 @@ const productRows: (typeof products.$inferInsert)[] = [
 		sold: 493,
 		stock: 27,
 		specs: ['AC1900', 'Mesh 2 unit', 'Coverage 350m²', 'Gigabit Port'],
-		image: 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=800&h=600&fit=crop&q=80'
+		image: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&h=600&fit=crop&q=80'
 	},
 	{
 		id: 'p_43',
@@ -621,7 +621,7 @@ const productRows: (typeof products.$inferInsert)[] = [
 		sold: 218,
 		stock: 15,
 		specs: ['WiFi 6', 'Dual Band', 'PoE', 'Controller UniFi'],
-		image: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&h=600&fit=crop&q=80'
+		image: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=800&h=600&fit=crop&q=80'
 	},
 	{
 		id: 'p_44',
