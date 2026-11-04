@@ -1,8 +1,10 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
 	import { toast } from 'svelte-sonner';
 	import RiArrowLeftLine from 'remixicon-svelte/icons/arrow-left-line';
+	import RiLoader4Line from 'remixicon-svelte/icons/loader-4-line';
 	import SiteHeader from '#lib/components/site-header.svelte';
 	import * as Card from '#lib/components/ui/card/index.js';
 	import { Badge } from '#lib/components/ui/badge/index.js';
@@ -10,17 +12,29 @@
 	import { Separator } from '#lib/components/ui/separator/index.js';
 	import { formatDateTime, formatRupiah } from '#lib/format.js';
 	import { ORDER_STATUS_LABEL, ORDER_STATUS_VARIANT } from '#lib/order-status.js';
+	import { BANK_TRANSFER } from '#lib/payment.js';
 	import type { PageProps } from './$types';
 
-	let { data }: PageProps = $props();
+	let { data, form }: PageProps = $props();
+
+	let uploading = $state(false);
+	let cancelling = $state(false);
+	let proofName = $state('');
 
 	$effect(() => {
 		const created = page.url.searchParams.get('created');
 		if (!created) return;
 		toast.success('Pesanan berhasil dibuat', {
-			description: 'Status saat ini: menunggu pembayaran.'
+			description: 'Silakan transfer sesuai total, lalu unggah bukti pembayaran.'
 		});
 		history.replaceState({}, '', resolve('/pesanan/[id]', { id: data.order.id }));
+	});
+
+	$effect(() => {
+		if (form?.proofOk) toast.success('Bukti transfer terkirim. Menunggu konfirmasi admin.');
+		if (form?.cancelOk) toast.success('Pesanan dibatalkan');
+		if (form?.proofError) toast.error(form.proofError);
+		if (form?.cancelError) toast.error(form.cancelError);
 	});
 </script>
 
@@ -49,15 +63,117 @@
 				Dibuat {formatDateTime(data.order.createdAt)}
 			</p>
 		</div>
-		{#if data.order.status === 'menunggu_pembayaran'}
-			<p class="rounded-lg bg-amber-500/10 px-3 py-2 text-sm text-amber-800 dark:text-amber-200">
-				Menunggu pembayaran — fitur bayar segera hadir.
-			</p>
-		{/if}
 	</div>
 
 	<div class="grid items-start gap-6 lg:grid-cols-[1fr_18rem]">
 		<div class="grid gap-6">
+			{#if data.order.status === 'menunggu_pembayaran'}
+				<Card.Root>
+					<Card.Header>
+						<Card.Title>Pembayaran</Card.Title>
+						<Card.Description>
+							Transfer sesuai total, lalu unggah bukti agar admin bisa mengonfirmasi.
+						</Card.Description>
+					</Card.Header>
+					<Card.Content class="space-y-4 text-sm">
+						<div class="rounded-xl bg-muted/60 p-4">
+							<p class="text-muted-foreground">Transfer ke</p>
+							<p class="mt-1 text-base font-semibold">
+								{BANK_TRANSFER.bank} · {BANK_TRANSFER.accountNumber}
+							</p>
+							<p>{BANK_TRANSFER.accountName}</p>
+							<p class="mt-3 text-muted-foreground">Jumlah transfer</p>
+							<p class="text-xl font-bold tabular-nums">{formatRupiah(data.order.total)}</p>
+						</div>
+
+						{#if data.order.paymentProof}
+							<div class="space-y-2">
+								<p class="font-medium">Bukti yang sudah diunggah</p>
+								<a
+									href={data.order.paymentProof}
+									target="_blank"
+									rel="noreferrer"
+									class="block overflow-hidden rounded-xl border"
+								>
+									<img
+										src={data.order.paymentProof}
+										alt="Bukti transfer"
+										class="max-h-64 w-full object-contain bg-muted/40"
+									/>
+								</a>
+								<p class="text-xs text-muted-foreground">
+									Menunggu konfirmasi admin. Kamu bisa mengganti bukti jika perlu.
+								</p>
+							</div>
+						{/if}
+
+						<form
+							method="POST"
+							action="?/uploadProof"
+							enctype="multipart/form-data"
+							class="space-y-3"
+							use:enhance={() => {
+								uploading = true;
+								return async ({ update }) => {
+									uploading = false;
+									proofName = '';
+									await update();
+								};
+							}}
+						>
+							<label class="grid gap-1.5">
+								<span class="font-medium">Unggah bukti transfer</span>
+								<input
+									type="file"
+									name="proof"
+									accept="image/jpeg,image/png,image/webp,image/gif"
+									required
+									class="text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-primary-foreground"
+									onchange={(e) => {
+										proofName = e.currentTarget.files?.[0]?.name ?? '';
+									}}
+								/>
+								{#if proofName}
+									<span class="text-xs text-muted-foreground">{proofName}</span>
+								{/if}
+							</label>
+							<Button type="submit" disabled={uploading}>
+								{#if uploading}
+									<RiLoader4Line class="animate-spin" /> Mengunggah...
+								{:else}
+									Kirim Bukti Transfer
+								{/if}
+							</Button>
+						</form>
+					</Card.Content>
+				</Card.Root>
+			{:else if data.order.paymentProof}
+				<Card.Root>
+					<Card.Header>
+						<Card.Title>Bukti pembayaran</Card.Title>
+					</Card.Header>
+					<Card.Content>
+						<a
+							href={data.order.paymentProof}
+							target="_blank"
+							rel="noreferrer"
+							class="block overflow-hidden rounded-xl border"
+						>
+							<img
+								src={data.order.paymentProof}
+								alt="Bukti transfer"
+								class="max-h-64 w-full object-contain bg-muted/40"
+							/>
+						</a>
+						{#if data.order.paidAt}
+							<p class="mt-2 text-sm text-muted-foreground">
+								Dikonfirmasi {formatDateTime(data.order.paidAt)}
+							</p>
+						{/if}
+					</Card.Content>
+				</Card.Root>
+			{/if}
+
 			<Card.Root class="gap-0 py-0">
 				<Card.Header class="px-4 pt-4 pb-0">
 					<Card.Title>Item pesanan</Card.Title>
@@ -142,6 +258,40 @@
 					<span class="text-lg font-bold tabular-nums">{formatRupiah(data.order.total)}</span>
 				</div>
 			</Card.Content>
+			{#if data.order.status === 'menunggu_pembayaran'}
+				<Card.Footer>
+					<form
+						method="POST"
+						action="?/cancel"
+						class="w-full"
+						use:enhance={() => {
+							cancelling = true;
+							return async ({ update }) => {
+								cancelling = false;
+								await update();
+							};
+						}}
+					>
+						<Button
+							type="submit"
+							variant="outline"
+							class="w-full text-destructive"
+							disabled={cancelling}
+							onclick={(e) => {
+								if (!confirm('Batalkan pesanan ini? Stok produk akan dikembalikan.')) {
+									e.preventDefault();
+								}
+							}}
+						>
+							{#if cancelling}
+								<RiLoader4Line class="animate-spin" /> Membatalkan...
+							{:else}
+								Batalkan Pesanan
+							{/if}
+						</Button>
+					</form>
+				</Card.Footer>
+			{/if}
 		</Card.Root>
 	</div>
 </main>

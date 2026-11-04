@@ -249,7 +249,7 @@
 					</div>
 
 					<p class="text-xs text-muted-foreground">
-						Status awal pesanan: menunggu pembayaran. Integrasi pembayaran menyusul.
+						Setelah pesanan dibuat, transfer ke rekening toko lalu unggah bukti pembayaran.
 					</p>
 				</Card.Content>
 				<Card.Footer>

@@ -89,6 +89,8 @@ export const orders = mysqlTable('orders', {
 	subtotal: int('subtotal').notNull(),
 	shippingFee: int('shipping_fee').notNull(),
 	total: int('total').notNull(),
+	paymentProof: varchar('payment_proof', { length: 500 }),
+	paidAt: timestamp('paid_at', { mode: 'date', fsp: 3 }),
 	createdAt: timestamp('created_at', { mode: 'date', fsp: 3 }).notNull().defaultNow(),
 	// MySQL + fsp:3 menolak ON UPDATE CURRENT_TIMESTAMP; diperbarui manual saat status berubah.
 	updatedAt: timestamp('updated_at', { mode: 'date', fsp: 3 }).notNull().defaultNow()

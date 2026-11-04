@@ -95,10 +95,18 @@ export type Order = {
 	subtotal: number;
 	shippingFee: number;
 	total: number;
+	paymentProof: string | null;
+	paidAt: Date | null;
 	createdAt: Date;
 	updatedAt: Date;
 };
 
 export type OrderWithItems = Order & {
 	items: OrderItem[];
+};
+
+export type AdminOrderListItem = Order & {
+	customerName: string;
+	customerEmail: string;
+	itemCount: number;
 };

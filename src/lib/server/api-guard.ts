@@ -2,7 +2,7 @@ import { error } from '@sveltejs/kit';
 
 /**
  * Tolak buka endpoint API langsung dari address bar browser.
- * Request dari axios/fetch app (dan SSR) tetap diizinkan.
+ * Request dari fetch app (dan SSR) tetap diizinkan.
  *
  * Catatan: ini mencegah penampilan JSON di tab browser, bukan enkripsi data.
  * Siapa pun yang memanggil API dengan header yang benar tetap bisa membaca respons.

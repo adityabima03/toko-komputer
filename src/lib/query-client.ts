@@ -5,9 +5,7 @@ function makeQueryClient() {
 	return new QueryClient({
 		defaultOptions: {
 			queries: {
-				// On the server, queries only read data prefetched in `load`; they never fetch during render.
-				enabled: browser,
-				staleTime: 1000 * 60,
+				staleTime: 1000 * 30,
 				retry: 1,
 				refetchOnWindowFocus: false
 			}
@@ -17,7 +15,7 @@ function makeQueryClient() {
 
 let browserQueryClient: QueryClient | undefined;
 
-/** A fresh client per request on the server (no cross-user cache leaks), a singleton in the browser. */
+/** Satu client di browser; di server selalu instance baru agar data tidak bocor antar-request. */
 export function getQueryClient() {
 	if (!browser) return makeQueryClient();
 	return (browserQueryClient ??= makeQueryClient());

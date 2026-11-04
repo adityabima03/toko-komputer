@@ -15,13 +15,16 @@ import {
 	sql,
 	type SQL
 } from 'drizzle-orm';
+import { canAdminSetStatus } from '#lib/order-status.js';
 import { calcShippingFee } from '#lib/shipping.js';
 import type {
 	Address,
+	AdminOrderListItem,
 	BrandCount,
 	Category,
 	Order,
 	OrderItem,
+	OrderStatus,
 	OrderWithItems,
 	Product,
 	ProductFilter,
@@ -208,24 +211,38 @@ export function listBrands(category?: string | null): Promise<BrandCount[]> {
 }
 
 export async function getAdminStats() {
-	const [[productCount], [categoryCount], [userCount], [outOfStock], [lowStock]] =
-		await Promise.all([
-			db.select({ value: count() }).from(products),
-			db.select({ value: count() }).from(categories),
-			db.select({ value: count() }).from(users),
-			db.select({ value: count() }).from(products).where(eq(products.stock, 0)),
-			db
-				.select({ value: count() })
-				.from(products)
-				.where(and(gt(products.stock, 0), lte(products.stock, 5)))
-		]);
+	const [
+		[productCount],
+		[categoryCount],
+		[userCount],
+		[outOfStock],
+		[lowStock],
+		[pendingOrders],
+		[orderCount]
+	] = await Promise.all([
+		db.select({ value: count() }).from(products),
+		db.select({ value: count() }).from(categories),
+		db.select({ value: count() }).from(users),
+		db.select({ value: count() }).from(products).where(eq(products.stock, 0)),
+		db
+			.select({ value: count() })
+			.from(products)
+			.where(and(gt(products.stock, 0), lte(products.stock, 5))),
+		db
+			.select({ value: count() })
+			.from(orders)
+			.where(eq(orders.status, 'menunggu_pembayaran')),
+		db.select({ value: count() }).from(orders)
+	]);
 
 	return {
 		products: productCount?.value ?? 0,
 		categories: categoryCount?.value ?? 0,
 		users: userCount?.value ?? 0,
 		outOfStock: outOfStock?.value ?? 0,
-		lowStock: lowStock?.value ?? 0
+		lowStock: lowStock?.value ?? 0,
+		pendingOrders: pendingOrders?.value ?? 0,
+		orders: orderCount?.value ?? 0
 	};
 }
 
@@ -529,4 +546,119 @@ export async function createOrder(
 
 	const order = await findOrderById(orderId, userId);
 	return order ? { order } : { error: 'failed' };
+}
+
+async function loadOrderItems(orderIds: string[]) {
+	if (orderIds.length === 0) return new Map<string, OrderItem[]>();
+
+	const itemRows = await db.select().from(orderItems).where(inArray(orderItems.orderId, orderIds));
+	const itemsByOrder = new Map<string, OrderItem[]>();
+	for (const item of itemRows) {
+		const list = itemsByOrder.get(item.orderId) ?? [];
+		list.push(toOrderItem(item));
+		itemsByOrder.set(item.orderId, list);
+	}
+	return itemsByOrder;
+}
+
+export async function findOrderByIdAny(id: string): Promise<OrderWithItems | null> {
+	const row = await db.query.orders.findFirst({ where: eq(orders.id, id) });
+	if (!row) return null;
+	const items = await db.select().from(orderItems).where(eq(orderItems.orderId, id));
+	return { ...toOrder(row), items: items.map(toOrderItem) };
+}
+
+export async function listAdminOrders(status?: OrderStatus | 'all'): Promise<AdminOrderListItem[]> {
+	const rows = await db
+		.select({
+			order: orders,
+			customerName: users.name,
+			customerEmail: users.email
+		})
+		.from(orders)
+		.innerJoin(users, eq(orders.userId, users.id))
+		.where(status && status !== 'all' ? eq(orders.status, status) : undefined)
+		.orderBy(desc(orders.createdAt));
+
+	if (rows.length === 0) return [];
+
+	const itemsByOrder = await loadOrderItems(rows.map((r) => r.order.id));
+
+	return rows.map(({ order, customerName, customerEmail }) => {
+		const items = itemsByOrder.get(order.id) ?? [];
+		return {
+			...toOrder(order),
+			customerName,
+			customerEmail,
+			itemCount: items.reduce((n, item) => n + item.qty, 0)
+		};
+	});
+}
+
+export async function submitPaymentProof(orderId: string, userId: string, proofUrl: string) {
+	const order = await findOrderById(orderId, userId);
+	if (!order) return { error: 'not_found' as const };
+	if (order.status !== 'menunggu_pembayaran') return { error: 'invalid_status' as const };
+
+	await db
+		.update(orders)
+		.set({ paymentProof: proofUrl, updatedAt: new Date() })
+		.where(and(eq(orders.id, orderId), eq(orders.userId, userId)));
+
+	return { order: await findOrderById(orderId, userId) };
+}
+
+async function restoreOrderStock(
+	tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+	items: OrderItem[]
+) {
+	for (const item of items) {
+		if (!item.productId) continue;
+		await tx
+			.update(products)
+			.set({
+				stock: sql`${products.stock} + ${item.qty}`,
+				sold: sql`GREATEST(${products.sold} - ${item.qty}, 0)`
+			})
+			.where(eq(products.id, item.productId));
+	}
+}
+
+export async function cancelOrder(orderId: string, userId: string) {
+	const order = await findOrderById(orderId, userId);
+	if (!order) return { error: 'not_found' as const };
+	if (order.status !== 'menunggu_pembayaran') return { error: 'invalid_status' as const };
+
+	await db.transaction(async (tx) => {
+		await restoreOrderStock(tx, order.items);
+		await tx
+			.update(orders)
+			.set({ status: 'dibatalkan', updatedAt: new Date() })
+			.where(and(eq(orders.id, orderId), eq(orders.userId, userId)));
+	});
+
+	return { order: await findOrderById(orderId, userId) };
+}
+
+export async function updateOrderStatus(orderId: string, nextStatus: OrderStatus) {
+	const order = await findOrderByIdAny(orderId);
+	if (!order) return { error: 'not_found' as const };
+	if (!canAdminSetStatus(order.status, nextStatus)) return { error: 'invalid_status' as const };
+
+	await db.transaction(async (tx) => {
+		if (nextStatus === 'dibatalkan') {
+			await restoreOrderStock(tx, order.items);
+		}
+
+		await tx
+			.update(orders)
+			.set({
+				status: nextStatus,
+				updatedAt: new Date(),
+				...(nextStatus === 'dibayar' && !order.paidAt ? { paidAt: new Date() } : {})
+			})
+			.where(eq(orders.id, orderId));
+	});
+
+	return { order: await findOrderByIdAny(orderId) };
 }

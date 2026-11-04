@@ -2,6 +2,7 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import RiDashboardLine from 'remixicon-svelte/icons/dashboard-line';
+	import RiShoppingBag3Line from 'remixicon-svelte/icons/shopping-bag-3-line';
 	import RiStoreLine from 'remixicon-svelte/icons/store-line';
 	import RiArrowLeftLine from 'remixicon-svelte/icons/arrow-left-line';
 	import SiteHeader from '#lib/components/site-header.svelte';
@@ -12,6 +13,7 @@
 
 	const nav = [
 		{ href: '/admin', label: 'Dashboard', icon: RiDashboardLine, exact: true },
+		{ href: '/admin/pesanan', label: 'Pesanan', icon: RiShoppingBag3Line, exact: false },
 		{ href: '/admin/produk', label: 'Produk', icon: RiStoreLine, exact: false }
 	] as const;
 

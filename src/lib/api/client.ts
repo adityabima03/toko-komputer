@@ -24,7 +24,6 @@ function svelteKitFetchAdapter(svelteKitFetch: typeof fetch): typeof fetch {
 
 		if (input instanceof Request) {
 			const headers = new Headers(input.headers);
-			// Server-only header (browsers forbid setting it); it would make the server/client hashes differ.
 			headers.delete('user-agent');
 			const hasBody = input.method !== 'GET' && input.method !== 'HEAD';
 			res = await svelteKitFetch(input.url, {
