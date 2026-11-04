@@ -104,8 +104,21 @@
 				<p class="text-sm text-muted-foreground">
 					Yuk, cari laptop, komponen, atau peripheral incaranmu.
 				</p>
+				{#if data.user}
+					<p class="mt-2 text-sm text-muted-foreground">
+						Baru saja checkout?
+						<a href={resolve('/pesanan')} class="font-medium text-primary underline">
+							Lanjut bayar di Pesanan Saya
+						</a>
+					</p>
+				{/if}
 			</div>
-			<Button href={resolve('/')} class="mt-2">Mulai Belanja</Button>
+			<div class="mt-2 flex flex-wrap justify-center gap-2">
+				<Button href={resolve('/')}>Mulai Belanja</Button>
+				{#if data.user}
+					<Button href={resolve('/pesanan')} variant="outline">Pesanan Saya</Button>
+				{/if}
+			</div>
 		</div>
 	{:else}
 		<div class="grid items-start gap-6 lg:grid-cols-[1fr_22rem]">

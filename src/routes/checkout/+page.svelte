@@ -25,6 +25,9 @@
 
 	let { data }: PageProps = $props();
 
+	/** Cegah redirect ke /keranjang saat keranjang dikosongkan setelah buat pesanan. */
+	let placingOrder = $state(false);
+
 	$effect(() => {
 		const products = data.products;
 		if (untrack(() => cart.sync(products))) {
@@ -34,17 +37,12 @@
 		}
 	});
 
-	$effect(() => {
-		if (cart.available.length === 0) {
-			goto(resolve('/keranjang'));
-		}
-	});
-
 	// svelte-ignore state_referenced_locally
 	const checkout = superForm(data.form, {
 		validators: zod4Client(checkoutSchema),
 		onResult: ({ result }) => {
 			if (result.type === 'redirect') {
+				placingOrder = true;
 				cart.clear();
 			}
 		},
@@ -53,6 +51,13 @@
 		}
 	});
 	const { form: formData, enhance, submitting, message } = checkout;
+
+	$effect(() => {
+		if (placingOrder || $submitting) return;
+		if (cart.available.length === 0) {
+			goto(resolve('/keranjang'));
+		}
+	});
 
 	$effect(() => {
 		$formData.itemsJson = JSON.stringify(

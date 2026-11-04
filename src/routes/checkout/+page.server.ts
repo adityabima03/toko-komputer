@@ -51,6 +51,6 @@ export const actions = {
 			return message(form, messages[result.error], { status: 400 });
 		}
 
-		redirect(303, `/pesanan/${result.order.id}?created=1`);
+		redirect(303, `/pesanan/${result.order.id}?created=1#bayar`);
 	}
 } satisfies Actions;

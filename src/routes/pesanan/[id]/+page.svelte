@@ -72,7 +72,7 @@
 	<div class="grid items-start gap-6 lg:grid-cols-[1fr_18rem]">
 		<div class="grid gap-6">
 			{#if data.order.status === 'menunggu_pembayaran'}
-				<Card.Root>
+				<Card.Root id="bayar">
 					<Card.Header>
 						<Card.Title>Bayar otomatis (simulasi QRIS)</Card.Title>
 						<Card.Description>
