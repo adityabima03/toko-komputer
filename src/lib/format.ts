@@ -23,3 +23,11 @@ export function initials(name: string) {
 		.map((part) => part[0]!.toUpperCase())
 		.join('');
 }
+
+const dateTime = new Intl.DateTimeFormat('id-ID', {
+	dateStyle: 'medium',
+	timeStyle: 'short'
+});
+
+export const formatDateTime = (value: Date | string) =>
+	dateTime.format(value instanceof Date ? value : new Date(value));

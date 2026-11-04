@@ -1,4 +1,5 @@
 import {
+	boolean,
 	double,
 	int,
 	json,
@@ -47,4 +48,65 @@ export const products = mysqlTable('products', {
 	stock: int('stock').notNull().default(0),
 	specs: json('specs').$type<string[]>().notNull().default([]),
 	image: varchar('image', { length: 500 }).notNull()
+});
+
+export const addresses = mysqlTable('addresses', {
+	id: varchar('id', { length: 64 }).primaryKey(),
+	userId: varchar('user_id', { length: 64 })
+		.notNull()
+		.references(() => users.id, { onDelete: 'cascade' }),
+	label: varchar('label', { length: 40 }).notNull(),
+	recipientName: varchar('recipient_name', { length: 120 }).notNull(),
+	phone: varchar('phone', { length: 20 }).notNull(),
+	addressLine: varchar('address_line', { length: 255 }).notNull(),
+	city: varchar('city', { length: 100 }).notNull(),
+	province: varchar('province', { length: 100 }).notNull(),
+	postalCode: varchar('postal_code', { length: 10 }).notNull(),
+	isDefault: boolean('is_default').notNull().default(false),
+	createdAt: timestamp('created_at', { mode: 'date', fsp: 3 }).notNull().defaultNow()
+});
+
+export const orderStatusEnum = [
+	'menunggu_pembayaran',
+	'dibayar',
+	'dikirim',
+	'selesai',
+	'dibatalkan'
+] as const;
+
+export const orders = mysqlTable('orders', {
+	id: varchar('id', { length: 64 }).primaryKey(),
+	userId: varchar('user_id', { length: 64 })
+		.notNull()
+		.references(() => users.id, { onDelete: 'cascade' }),
+	status: mysqlEnum('status', orderStatusEnum).notNull().default('menunggu_pembayaran'),
+	recipientName: varchar('recipient_name', { length: 120 }).notNull(),
+	phone: varchar('phone', { length: 20 }).notNull(),
+	addressLine: varchar('address_line', { length: 255 }).notNull(),
+	city: varchar('city', { length: 100 }).notNull(),
+	province: varchar('province', { length: 100 }).notNull(),
+	postalCode: varchar('postal_code', { length: 10 }).notNull(),
+	subtotal: int('subtotal').notNull(),
+	shippingFee: int('shipping_fee').notNull(),
+	total: int('total').notNull(),
+	createdAt: timestamp('created_at', { mode: 'date', fsp: 3 }).notNull().defaultNow(),
+	// MySQL + fsp:3 menolak ON UPDATE CURRENT_TIMESTAMP; diperbarui manual saat status berubah.
+	updatedAt: timestamp('updated_at', { mode: 'date', fsp: 3 }).notNull().defaultNow()
+});
+
+export const orderItems = mysqlTable('order_items', {
+	id: varchar('id', { length: 64 }).primaryKey(),
+	orderId: varchar('order_id', { length: 64 })
+		.notNull()
+		.references(() => orders.id, { onDelete: 'cascade' }),
+	productId: varchar('product_id', { length: 64 }).references(() => products.id, {
+		onDelete: 'set null'
+	}),
+	productName: varchar('product_name', { length: 190 }).notNull(),
+	productSlug: varchar('product_slug', { length: 190 }).notNull(),
+	productImage: varchar('product_image', { length: 500 }).notNull(),
+	brand: varchar('brand', { length: 120 }).notNull(),
+	price: int('price').notNull(),
+	qty: int('qty').notNull(),
+	lineTotal: int('line_total').notNull()
 });

@@ -17,12 +17,18 @@
 	import { DEFAULT_PRODUCT_FILTER, productsQuery } from '#lib/api/products.js';
 	import { categoryIcon } from '#lib/category-icons.js';
 	import { formatRupiah } from '#lib/format.js';
+	import { calcShippingFee, FREE_SHIPPING_MIN } from '#lib/shipping.js';
 	import { cart, type CartItem } from '#lib/stores/cart.svelte.js';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
 
-	const FREE_SHIPPING_MIN = 1_000_000;
+	const shippingFee = $derived(calcShippingFee(cart.total));
+	const checkoutHref = $derived(
+		data.user
+			? resolve('/checkout')
+			: `${resolve('/login')}?redirectTo=${encodeURIComponent('/checkout')}`
+	);
 
 	const latest = createQuery(() => productsQuery(DEFAULT_PRODUCT_FILTER));
 
@@ -60,10 +66,6 @@
 		toast('Keranjang dikosongkan', {
 			action: { label: 'Urungkan', onClick: () => cart.restore(snapshot) }
 		});
-	}
-
-	function checkout() {
-		toast.info('Fitur checkout segera hadir');
 	}
 </script>
 
@@ -222,10 +224,10 @@
 					{/if}
 					<div class="flex justify-between">
 						<span class="text-muted-foreground">Ongkos kirim</span>
-						{#if cart.total >= FREE_SHIPPING_MIN}
+						{#if shippingFee === 0}
 							<span class="font-medium text-emerald-600 dark:text-emerald-500">Gratis</span>
 						{:else}
-							<span class="text-muted-foreground">Dihitung saat checkout</span>
+							<span class="tabular-nums">{formatRupiah(shippingFee)}</span>
 						{/if}
 					</div>
 					{#if cart.total > 0 && cart.total < FREE_SHIPPING_MIN}
@@ -238,7 +240,9 @@
 
 					<div class="flex items-baseline justify-between">
 						<span class="font-medium">Total</span>
-						<span class="text-lg font-bold tabular-nums">{formatRupiah(cart.total)}</span>
+						<span class="text-lg font-bold tabular-nums"
+							>{formatRupiah(cart.total + shippingFee)}</span
+						>
 					</div>
 
 					{#if unavailableCount > 0}
@@ -251,14 +255,15 @@
 					<Button
 						size="lg"
 						class="w-full"
+						href={checkoutHref}
 						disabled={cart.available.length === 0}
-						onclick={checkout}
 					>
 						<RiSecurePaymentLine data-icon="inline-start" /> Checkout
 					</Button>
 					{#if !data.user}
 						<p class="text-center text-xs text-muted-foreground">
-							Kamu perlu <a href={resolve('/login')} class="text-primary underline">masuk</a> untuk checkout.
+							Kamu perlu <a href={checkoutHref} class="text-primary underline">masuk</a> untuk
+							checkout.
 						</p>
 					{/if}
 				</Card.Footer>

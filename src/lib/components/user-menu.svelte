@@ -57,7 +57,7 @@
 		<DropdownMenu.Item onSelect={() => goto(resolve('/profil'))}>
 			<RiUserLine /> Profil Saya
 		</DropdownMenu.Item>
-		<DropdownMenu.Item disabled>
+		<DropdownMenu.Item onSelect={() => goto(resolve('/pesanan'))}>
 			<RiShoppingCart2Line /> Pesanan Saya
 		</DropdownMenu.Item>
 		<DropdownMenu.Separator />

@@ -47,3 +47,58 @@ export type BrandCount = {
 export type ApiErrorBody = {
 	message: string;
 };
+
+export type Address = {
+	id: string;
+	userId: string;
+	label: string;
+	recipientName: string;
+	phone: string;
+	addressLine: string;
+	city: string;
+	province: string;
+	postalCode: string;
+	isDefault: boolean;
+	createdAt: Date;
+};
+
+export type OrderStatus =
+	| 'menunggu_pembayaran'
+	| 'dibayar'
+	| 'dikirim'
+	| 'selesai'
+	| 'dibatalkan';
+
+export type OrderItem = {
+	id: string;
+	orderId: string;
+	productId: string | null;
+	productName: string;
+	productSlug: string;
+	productImage: string;
+	brand: string;
+	price: number;
+	qty: number;
+	lineTotal: number;
+};
+
+export type Order = {
+	id: string;
+	userId: string;
+	status: OrderStatus;
+	recipientName: string;
+	phone: string;
+	addressLine: string;
+	city: string;
+	province: string;
+	postalCode: string;
+	subtotal: number;
+	shippingFee: number;
+	total: number;
+	createdAt: Date;
+	updatedAt: Date;
+};
+
+export type OrderWithItems = Order & {
+	items: OrderItem[];
+};

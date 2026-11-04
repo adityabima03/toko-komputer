@@ -1,10 +1,13 @@
 <script lang="ts">
-	import { superForm } from 'sveltekit-superforms';
-	import { zod4Client } from 'sveltekit-superforms/adapters';
+	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
 	import { toast } from 'svelte-sonner';
+	import { superForm } from 'sveltekit-superforms';
+	import { zod4Client } from 'sveltekit-superforms/adapters';
 	import RiArrowLeftLine from 'remixicon-svelte/icons/arrow-left-line';
+	import RiDeleteBinLine from 'remixicon-svelte/icons/delete-bin-line';
 	import RiLoader4Line from 'remixicon-svelte/icons/loader-4-line';
+	import RiMapPinLine from 'remixicon-svelte/icons/map-pin-line';
 	import RiShoppingCart2Line from 'remixicon-svelte/icons/shopping-cart-2-line';
 	import SiteHeader from '#lib/components/site-header.svelte';
 	import * as Avatar from '#lib/components/ui/avatar/index.js';
@@ -12,14 +15,21 @@
 	import * as Form from '#lib/components/ui/form/index.js';
 	import { Badge } from '#lib/components/ui/badge/index.js';
 	import { Button } from '#lib/components/ui/button/index.js';
+	import { Checkbox } from '#lib/components/ui/checkbox/index.js';
 	import { Input } from '#lib/components/ui/input/index.js';
 	import { Separator } from '#lib/components/ui/separator/index.js';
 	import { initials } from '#lib/format.js';
+	import { addressSchema } from '#lib/schemas/address.js';
 	import { passwordSchema, profileSchema } from '#lib/schemas/profile.js';
 	import { cart } from '#lib/stores/cart.svelte.js';
+	import { cn } from '#lib/utils.js';
+	import type { Address } from '#lib/types.js';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
+
+	const inputClass =
+		'h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm dark:bg-input/30';
 
 	const showSuccess = ({ form }: { form: { valid: boolean; message?: unknown } }) => {
 		if (form.valid && typeof form.message === 'string') toast.success(form.message);
@@ -28,7 +38,6 @@
 	// svelte-ignore state_referenced_locally
 	const profile = superForm(data.profileForm, {
 		validators: zod4Client(profileSchema),
-		// Form edit: tampilkan data yang baru disimpan, bukan data awal saat halaman dibuka.
 		resetForm: false,
 		onUpdated: showSuccess
 	});
@@ -47,8 +56,73 @@
 	});
 	const { form: passwordData, enhance: passwordEnhance, submitting: passwordSubmitting } = password;
 
-	// `data.user` selalu ada: halaman ini sudah redirect ke /login kalau belum masuk.
+	// svelte-ignore state_referenced_locally
+	const address = superForm(data.addressForm, {
+		validators: zod4Client(addressSchema),
+		id: 'address',
+		invalidateAll: true,
+		onUpdated: ({ form }) => {
+			if (!form.valid || typeof form.message !== 'string') return;
+			toast.success(form.message);
+			editingId = null;
+			resetAddress({
+				data: {
+					label: 'Rumah',
+					recipientName: user.name,
+					phone: '',
+					addressLine: '',
+					city: '',
+					province: '',
+					postalCode: '',
+					isDefault: false
+				}
+			});
+		}
+	});
+	const {
+		form: addressData,
+		enhance: addressEnhance,
+		submitting: addressSubmitting,
+		reset: resetAddress
+	} = address;
+
+	let editingId = $state<string | null>(null);
+
 	const user = $derived(data.user!);
+
+	function startEdit(item: Address) {
+		editingId = item.id;
+		$addressData = {
+			label: item.label,
+			recipientName: item.recipientName,
+			phone: item.phone,
+			addressLine: item.addressLine,
+			city: item.city,
+			province: item.province,
+			postalCode: item.postalCode,
+			isDefault: item.isDefault
+		};
+	}
+
+	function cancelEdit() {
+		editingId = null;
+		resetAddress({
+			data: {
+				label: 'Rumah',
+				recipientName: user.name,
+				phone: '',
+				addressLine: '',
+				city: '',
+				province: '',
+				postalCode: '',
+				isDefault: false
+			}
+		});
+	}
+
+	function formatAddress(item: Address) {
+		return `${item.addressLine}, ${item.city}, ${item.province} ${item.postalCode}`;
+	}
 </script>
 
 <svelte:head>
@@ -85,6 +159,9 @@
 				<Button variant="outline" class="w-full" href={resolve('/keranjang')}>
 					<RiShoppingCart2Line data-icon="inline-start" />
 					Keranjang ({cart.count})
+				</Button>
+				<Button variant="outline" class="w-full" href={resolve('/pesanan')}>
+					Pesanan Saya
 				</Button>
 			</Card.Content>
 		</Card.Root>
@@ -137,6 +214,239 @@
 				</Card.Content>
 			</Card.Root>
 
+			<Card.Root id="alamat">
+				<Card.Header>
+					<Card.Title>Alamat Pengiriman</Card.Title>
+					<Card.Description>
+						Dipakai saat checkout. Kamu bisa menyimpan lebih dari satu alamat.
+					</Card.Description>
+				</Card.Header>
+				<Card.Content class="space-y-4">
+					{#if data.addresses.length === 0}
+						<div
+							class="flex flex-col items-center gap-2 rounded-xl border border-dashed px-4 py-8 text-center"
+						>
+							<span
+								class="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary"
+							>
+								<RiMapPinLine class="size-5" />
+							</span>
+							<p class="text-sm text-muted-foreground">Belum ada alamat tersimpan.</p>
+						</div>
+					{:else}
+						<ul class="grid gap-3">
+							{#each data.addresses as item (item.id)}
+								<li class="rounded-xl border p-4">
+									<div class="flex flex-wrap items-start justify-between gap-3">
+										<div class="min-w-0 space-y-1">
+											<div class="flex flex-wrap items-center gap-2">
+												<p class="font-medium">{item.label}</p>
+												{#if item.isDefault}
+													<Badge variant="secondary">Utama</Badge>
+												{/if}
+											</div>
+											<p class="text-sm">{item.recipientName} · {item.phone}</p>
+											<p class="text-sm text-muted-foreground">{formatAddress(item)}</p>
+										</div>
+										<div class="flex flex-wrap gap-1">
+											{#if !item.isDefault}
+												<form
+													method="POST"
+													action="?/addressDefault"
+													use:enhance={() => {
+														return async ({ result, update }) => {
+															await update();
+															if (result.type === 'success') toast.success('Alamat utama diganti');
+														};
+													}}
+												>
+													<input type="hidden" name="addressId" value={item.id} />
+													<Button type="submit" variant="ghost" size="sm">Jadikan utama</Button>
+												</form>
+											{/if}
+											<Button variant="ghost" size="sm" onclick={() => startEdit(item)}>
+												Ubah
+											</Button>
+											<form
+												method="POST"
+												action="?/addressDelete"
+												use:enhance={() => {
+													return async ({ result, update }) => {
+														await update();
+														if (result.type === 'success') {
+															toast.success('Alamat dihapus');
+															if (editingId === item.id) cancelEdit();
+														}
+													};
+												}}
+											>
+												<input type="hidden" name="addressId" value={item.id} />
+												<Button
+													type="submit"
+													variant="ghost"
+													size="sm"
+													class="text-destructive"
+													aria-label="Hapus alamat {item.label}"
+												>
+													<RiDeleteBinLine />
+												</Button>
+											</form>
+										</div>
+									</div>
+								</li>
+							{/each}
+						</ul>
+					{/if}
+
+					<Separator />
+
+					<div>
+						<h3 class="mb-3 font-medium">
+							{editingId ? 'Ubah alamat' : 'Tambah alamat baru'}
+						</h3>
+						<form
+							method="POST"
+							action={editingId ? '?/addressUpdate' : '?/addressCreate'}
+							class="grid gap-4"
+							use:addressEnhance
+							novalidate
+						>
+							{#if editingId}
+								<input type="hidden" name="addressId" value={editingId} />
+							{/if}
+
+							<div class="grid gap-4 sm:grid-cols-2">
+								<Form.Field form={address} name="label">
+									<Form.Control>
+										{#snippet children({ props })}
+											<Form.Label>Label</Form.Label>
+											<Input
+												{...props}
+												placeholder="Rumah / Kantor"
+												bind:value={$addressData.label}
+											/>
+										{/snippet}
+									</Form.Control>
+									<Form.FieldErrors />
+								</Form.Field>
+
+								<Form.Field form={address} name="recipientName">
+									<Form.Control>
+										{#snippet children({ props })}
+											<Form.Label>Nama penerima</Form.Label>
+											<Input
+												{...props}
+												autocomplete="name"
+												bind:value={$addressData.recipientName}
+											/>
+										{/snippet}
+									</Form.Control>
+									<Form.FieldErrors />
+								</Form.Field>
+							</div>
+
+							<Form.Field form={address} name="phone">
+								<Form.Control>
+									{#snippet children({ props })}
+										<Form.Label>Nomor telepon</Form.Label>
+										<Input
+											{...props}
+											type="tel"
+											autocomplete="tel"
+											placeholder="08xxxxxxxxxx"
+											bind:value={$addressData.phone}
+										/>
+									{/snippet}
+								</Form.Control>
+								<Form.FieldErrors />
+							</Form.Field>
+
+							<Form.Field form={address} name="addressLine">
+								<Form.Control>
+									{#snippet children({ props })}
+										<Form.Label>Alamat lengkap</Form.Label>
+										<textarea
+											{...props}
+											rows="3"
+											class={cn(inputClass, 'h-auto min-h-20 py-2')}
+											autocomplete="street-address"
+											placeholder="Nama jalan, nomor rumah, RT/RW, kelurahan"
+											bind:value={$addressData.addressLine}
+										></textarea>
+									{/snippet}
+								</Form.Control>
+								<Form.FieldErrors />
+							</Form.Field>
+
+							<div class="grid gap-4 sm:grid-cols-3">
+								<Form.Field form={address} name="city">
+									<Form.Control>
+										{#snippet children({ props })}
+											<Form.Label>Kota / Kabupaten</Form.Label>
+											<Input {...props} autocomplete="address-level2" bind:value={$addressData.city} />
+										{/snippet}
+									</Form.Control>
+									<Form.FieldErrors />
+								</Form.Field>
+
+								<Form.Field form={address} name="province">
+									<Form.Control>
+										{#snippet children({ props })}
+											<Form.Label>Provinsi</Form.Label>
+											<Input
+												{...props}
+												autocomplete="address-level1"
+												bind:value={$addressData.province}
+											/>
+										{/snippet}
+									</Form.Control>
+									<Form.FieldErrors />
+								</Form.Field>
+
+								<Form.Field form={address} name="postalCode">
+									<Form.Control>
+										{#snippet children({ props })}
+											<Form.Label>Kode pos</Form.Label>
+											<Input
+												{...props}
+												autocomplete="postal-code"
+												bind:value={$addressData.postalCode}
+											/>
+										{/snippet}
+									</Form.Control>
+									<Form.FieldErrors />
+								</Form.Field>
+							</div>
+
+							<Form.Field form={address} name="isDefault" class="flex flex-row items-center gap-2">
+								<Form.Control>
+									{#snippet children({ props })}
+										<Checkbox {...props} bind:checked={$addressData.isDefault} />
+										<Form.Label class="font-normal">Jadikan alamat utama</Form.Label>
+									{/snippet}
+								</Form.Control>
+								<Form.FieldErrors />
+							</Form.Field>
+
+							<div class="flex justify-end gap-2">
+								{#if editingId}
+									<Button type="button" variant="outline" onclick={cancelEdit}>Batal</Button>
+								{/if}
+								<Button type="submit" disabled={$addressSubmitting}>
+									{#if $addressSubmitting}
+										<RiLoader4Line class="animate-spin" /> Menyimpan...
+									{:else if editingId}
+										Simpan Perubahan
+									{:else}
+										Tambah Alamat
+									{/if}
+								</Button>
+							</div>
+						</form>
+					</div>
+				</Card.Content>
+			</Card.Root>
+
 			<Card.Root>
 				<Card.Header>
 					<Card.Title>Ganti Password</Card.Title>
@@ -146,7 +456,6 @@
 				</Card.Header>
 				<Card.Content>
 					<form method="POST" action="?/password" class="grid gap-4" use:passwordEnhance novalidate>
-						<!-- Membantu password manager mengenali akun yang passwordnya diganti. -->
 						<input
 							type="email"
 							name="username"

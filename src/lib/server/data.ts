@@ -12,18 +12,26 @@ import {
 	lte,
 	ne,
 	or,
+	sql,
 	type SQL
 } from 'drizzle-orm';
+import { calcShippingFee } from '#lib/shipping.js';
 import type {
+	Address,
 	BrandCount,
 	Category,
+	Order,
+	OrderItem,
+	OrderWithItems,
 	Product,
 	ProductFilter,
 	ProductSort,
 	User
 } from '#lib/types.js';
+import type { AddressInput } from '#lib/schemas/address.js';
+import type { CheckoutItemInput } from '#lib/schemas/checkout.js';
 import { db } from './db/index.js';
-import { categories, products, users } from './db/schema.js';
+import { addresses, categories, orderItems, orders, products, users } from './db/schema.js';
 import { hashPassword } from './password.js';
 
 export { verifyPassword } from './password.js';
@@ -240,4 +248,285 @@ export async function listAdminProducts() {
 		.orderBy(asc(products.name));
 
 	return rows;
+}
+
+type AddressRow = typeof addresses.$inferSelect;
+
+function toAddress(row: AddressRow): Address {
+	return row;
+}
+
+export async function listAddresses(userId: string): Promise<Address[]> {
+	const rows = await db
+		.select()
+		.from(addresses)
+		.where(eq(addresses.userId, userId))
+		.orderBy(desc(addresses.isDefault), asc(addresses.createdAt));
+	return rows.map(toAddress);
+}
+
+export async function findAddressById(id: string, userId: string): Promise<Address | null> {
+	const row = await db.query.addresses.findFirst({
+		where: and(eq(addresses.id, id), eq(addresses.userId, userId))
+	});
+	return row ? toAddress(row) : null;
+}
+
+async function clearDefaultAddresses(userId: string, exceptId?: string) {
+	const conditions = [eq(addresses.userId, userId), eq(addresses.isDefault, true)];
+	if (exceptId) conditions.push(ne(addresses.id, exceptId));
+	await db
+		.update(addresses)
+		.set({ isDefault: false })
+		.where(and(...conditions));
+}
+
+export async function createAddress(userId: string, data: AddressInput) {
+	const existing = await listAddresses(userId);
+	const id = `a_${randomBytes(8).toString('hex')}`;
+	const isDefault = data.isDefault || existing.length === 0;
+
+	if (isDefault) await clearDefaultAddresses(userId);
+
+	await db.insert(addresses).values({
+		id,
+		userId,
+		label: data.label.trim(),
+		recipientName: data.recipientName.trim(),
+		phone: data.phone.trim(),
+		addressLine: data.addressLine.trim(),
+		city: data.city.trim(),
+		province: data.province.trim(),
+		postalCode: data.postalCode.trim(),
+		isDefault
+	});
+
+	return findAddressById(id, userId);
+}
+
+export async function updateAddress(id: string, userId: string, data: AddressInput) {
+	const current = await findAddressById(id, userId);
+	if (!current) return null;
+
+	if (data.isDefault) await clearDefaultAddresses(userId, id);
+
+	await db
+		.update(addresses)
+		.set({
+			label: data.label.trim(),
+			recipientName: data.recipientName.trim(),
+			phone: data.phone.trim(),
+			addressLine: data.addressLine.trim(),
+			city: data.city.trim(),
+			province: data.province.trim(),
+			postalCode: data.postalCode.trim(),
+			isDefault: data.isDefault || current.isDefault
+		})
+		.where(and(eq(addresses.id, id), eq(addresses.userId, userId)));
+
+	return findAddressById(id, userId);
+}
+
+export async function setDefaultAddress(id: string, userId: string) {
+	const current = await findAddressById(id, userId);
+	if (!current) return false;
+
+	await clearDefaultAddresses(userId);
+	await db
+		.update(addresses)
+		.set({ isDefault: true })
+		.where(and(eq(addresses.id, id), eq(addresses.userId, userId)));
+	return true;
+}
+
+export async function deleteAddress(id: string, userId: string) {
+	const current = await findAddressById(id, userId);
+	if (!current) return false;
+
+	await db.delete(addresses).where(and(eq(addresses.id, id), eq(addresses.userId, userId)));
+
+	if (current.isDefault) {
+		const remaining = await listAddresses(userId);
+		if (remaining[0]) {
+			await db
+				.update(addresses)
+				.set({ isDefault: true })
+				.where(eq(addresses.id, remaining[0].id));
+		}
+	}
+
+	return true;
+}
+
+type OrderRow = typeof orders.$inferSelect;
+type OrderItemRow = typeof orderItems.$inferSelect;
+
+function toOrder(row: OrderRow): Order {
+	return row;
+}
+
+function toOrderItem(row: OrderItemRow): OrderItem {
+	return row;
+}
+
+export async function listOrdersByUser(userId: string): Promise<OrderWithItems[]> {
+	const orderRows = await db
+		.select()
+		.from(orders)
+		.where(eq(orders.userId, userId))
+		.orderBy(desc(orders.createdAt));
+
+	if (orderRows.length === 0) return [];
+
+	const itemRows = await db
+		.select()
+		.from(orderItems)
+		.where(
+			inArray(
+				orderItems.orderId,
+				orderRows.map((o) => o.id)
+			)
+		);
+
+	const itemsByOrder = new Map<string, OrderItem[]>();
+	for (const item of itemRows) {
+		const list = itemsByOrder.get(item.orderId) ?? [];
+		list.push(toOrderItem(item));
+		itemsByOrder.set(item.orderId, list);
+	}
+
+	return orderRows.map((row) => ({
+		...toOrder(row),
+		items: itemsByOrder.get(row.id) ?? []
+	}));
+}
+
+export async function findOrderById(id: string, userId: string): Promise<OrderWithItems | null> {
+	const row = await db.query.orders.findFirst({
+		where: and(eq(orders.id, id), eq(orders.userId, userId))
+	});
+	if (!row) return null;
+
+	const items = await db.select().from(orderItems).where(eq(orderItems.orderId, id));
+	return { ...toOrder(row), items: items.map(toOrderItem) };
+}
+
+export type CreateOrderResult =
+	| { order: OrderWithItems }
+	| {
+			error:
+				| 'empty'
+				| 'address'
+				| 'product_missing'
+				| 'stock'
+				| 'failed';
+			message?: string;
+	  };
+
+export async function createOrder(
+	userId: string,
+	addressId: string,
+	rawItems: CheckoutItemInput[]
+): Promise<CreateOrderResult> {
+	if (rawItems.length === 0) return { error: 'empty' };
+
+	const address = await findAddressById(addressId, userId);
+	if (!address) return { error: 'address' };
+
+	const qtyByProduct = new Map<string, number>();
+	for (const item of rawItems) {
+		qtyByProduct.set(item.productId, (qtyByProduct.get(item.productId) ?? 0) + item.qty);
+	}
+
+	const productIds = [...qtyByProduct.keys()];
+	const productRows = await db.select().from(products).where(inArray(products.id, productIds));
+	const productById = new Map(productRows.map((p) => [p.id, toProduct(p)]));
+
+	for (const productId of productIds) {
+		const product = productById.get(productId);
+		if (!product) {
+			return { error: 'product_missing', message: 'Ada produk yang sudah tidak tersedia' };
+		}
+		const qty = qtyByProduct.get(productId)!;
+		if (product.stock < qty) {
+			return {
+				error: 'stock',
+				message: `Stok ${product.name} tidak mencukupi (tersedia ${product.stock})`
+			};
+		}
+	}
+
+	const lineItems = productIds.map((productId) => {
+		const product = productById.get(productId)!;
+		const qty = qtyByProduct.get(productId)!;
+		return {
+			product,
+			qty,
+			lineTotal: product.price * qty
+		};
+	});
+
+	const subtotal = lineItems.reduce((n, item) => n + item.lineTotal, 0);
+	const shippingFee = calcShippingFee(subtotal);
+	const total = subtotal + shippingFee;
+	const orderId = `o_${randomBytes(8).toString('hex')}`;
+
+	try {
+		await db.transaction(async (tx) => {
+			for (const { product, qty } of lineItems) {
+				const [header] = await tx
+					.update(products)
+					.set({
+						stock: sql`${products.stock} - ${qty}`,
+						sold: sql`${products.sold} + ${qty}`
+					})
+					.where(and(eq(products.id, product.id), gte(products.stock, qty)));
+
+				if (header.affectedRows === 0) {
+					throw new Error(`stock:${product.name}`);
+				}
+			}
+
+			await tx.insert(orders).values({
+				id: orderId,
+				userId,
+				status: 'menunggu_pembayaran',
+				recipientName: address.recipientName,
+				phone: address.phone,
+				addressLine: address.addressLine,
+				city: address.city,
+				province: address.province,
+				postalCode: address.postalCode,
+				subtotal,
+				shippingFee,
+				total
+			});
+
+			await tx.insert(orderItems).values(
+				lineItems.map(({ product, qty, lineTotal }) => ({
+					id: `oi_${randomBytes(8).toString('hex')}`,
+					orderId,
+					productId: product.id,
+					productName: product.name,
+					productSlug: product.slug,
+					productImage: product.image,
+					brand: product.brand,
+					price: product.price,
+					qty,
+					lineTotal
+				}))
+			);
+		});
+	} catch (error) {
+		if (error instanceof Error && error.message.startsWith('stock:')) {
+			return {
+				error: 'stock',
+				message: `Stok ${error.message.slice(6)} tidak mencukupi`
+			};
+		}
+		return { error: 'failed' };
+	}
+
+	const order = await findOrderById(orderId, userId);
+	return order ? { order } : { error: 'failed' };
 }
