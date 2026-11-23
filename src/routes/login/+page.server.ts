@@ -3,7 +3,8 @@ import { message, superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
 import { safeRedirect } from '#lib/redirect.js';
 import { loginSchema } from '#lib/schemas/auth.js';
-import { findUserByEmail, verifyPassword } from '#lib/server/data.js';
+import { findUserByEmail, updateUserPassword } from '#lib/server/data.js';
+import { hashPassword, passwordNeedsRehash, verifyPassword } from '#lib/server/password.js';
 import { createSession } from '#lib/server/session.js';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -23,9 +24,13 @@ export const actions = {
 		const { email, password, remember } = form.data;
 		const user = await findUserByEmail(email);
 
-		if (!user || !verifyPassword(password, user.passwordHash)) {
+		if (!user || !(await verifyPassword(password, user.passwordHash))) {
 			form.data.password = '';
 			return message(form, 'Email atau password salah', { status: 401 });
+		}
+
+		if (passwordNeedsRehash(user.passwordHash)) {
+			await updateUserPassword(user.id, await hashPassword(password));
 		}
 
 		await createSession(cookies, user.id, remember);

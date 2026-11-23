@@ -61,7 +61,7 @@ export async function createUser(data: { name: string; email: string; password: 
 		name: data.name.trim(),
 		email,
 		role: 'customer',
-		passwordHash: hashPassword(data.password)
+		passwordHash: await hashPassword(data.password)
 	});
 
 	return findUserById(id);

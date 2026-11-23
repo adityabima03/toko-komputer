@@ -69,12 +69,12 @@ export const actions = {
 		if (!form.valid) return fail(400, { form });
 
 		const user = await findUserById(id);
-		if (!user || !verifyPassword(form.data.currentPassword, user.passwordHash)) {
+		if (!user || !(await verifyPassword(form.data.currentPassword, user.passwordHash))) {
 			form.data.currentPassword = '';
 			return setError(form, 'currentPassword', 'Password saat ini salah');
 		}
 
-		await updateUserPassword(user.id, hashPassword(form.data.newPassword));
+		await updateUserPassword(user.id, await hashPassword(form.data.newPassword));
 		const loggedOut = await destroyOtherSessions(cookies, user.id);
 
 		form.data = { currentPassword: '', newPassword: '', confirmPassword: '' };

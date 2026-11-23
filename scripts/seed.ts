@@ -16,14 +16,14 @@ const userRows: (typeof users.$inferInsert)[] = [
 		name: 'Admin Toko',
 		email: 'admin@tokokomputer.id',
 		role: 'admin',
-		passwordHash: hashPassword('admin123')
+		passwordHash: await hashPassword('admin123')
 	},
 	{
 		id: 'u_2',
 		name: 'Budi Santoso',
 		email: 'budi@example.com',
 		role: 'customer',
-		passwordHash: hashPassword('budi123')
+		passwordHash: await hashPassword('budi123')
 	}
 ];
 
